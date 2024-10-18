@@ -23,6 +23,7 @@ where
             } else {
                 serde_json::to_string(&ret).expect("Error Serializing data: ")
             };
+            fs::create_dir_all(path.parent().unwrap_or("".as_ref())).expect("Unable to create directories");
             fs::write(path, serialized).expect("Error writing file: ");
             ret
         },

@@ -157,6 +157,9 @@ impl JeGuiState {
             JeProfileChanged::IconChanged(i) => {
                 self.profile_edit.set_icon(i);
             }
+            JeProfileChanged::LoaderVersionChanged(new_version) => {
+                self.profile_edit.set_mod_loader_version(new_version);
+            }
         }
     }
 

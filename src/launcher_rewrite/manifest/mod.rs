@@ -26,6 +26,7 @@ fn init_game_version_manifest() -> GameVersionManifest {
 
     match manifest_response {
         Ok(json_data) => {
+            fs::create_dir_all(GAME_VERSION_MANIFEST_PATH.as_path().parent().unwrap_or("".as_ref())).expect("Unable to create directories");
             fs::write(GAME_VERSION_MANIFEST_PATH.as_path(), json_data.as_str()).unwrap();
             serde_json::from_str(json_data.as_str()).expect("Invalid manifest JSON supplied by Mojang!")
         }

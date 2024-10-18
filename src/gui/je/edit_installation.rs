@@ -23,6 +23,7 @@ pub enum JeProfileChanged {
     HeightChanged(String),
     JvmArgsChanged(String),
     IconChanged(LauncherProfileIcon),
+    LoaderVersionChanged(String),
     Save,
 }
 
@@ -49,6 +50,11 @@ pub fn edit_installations_tab_content(profile: &LauncherProfile) -> Element<'sta
     let name_selector = container(row![container(text("Installation Name: ")).center_y(Length::Fill).width(240), container(text_input("Profile Name", profile.name()).width(220).on_input(|s| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::NameChanged(s)))).center_y(Length::Fill).width(240),].height(40))
         .center_x(Length::Fill);
     let mod_loader_picker = container(row![container(text("Mod Loader: ")).center_y(Length::Fill).width(240), container(PickList::new(mod_loader_list, Some(profile.mod_loader()), |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::ModLoaderChanged(loader)))).center_y(Length::Fill).width(240),].height(40))
+        .center_x(Length::Fill);
+
+    let loader_version_list = ["latest-stable".to_owned(), "latest-beta".to_owned()];
+
+    let mod_loader_version_picker = container(row![container(text("Loader Version: ")).center_y(Length::Fill).width(240), container(PickList::new(loader_version_list, Some(profile.mod_loader_version().to_owned()), |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::LoaderVersionChanged(loader.to_owned())))).center_y(Length::Fill).width(240),].height(40))
         .center_x(Length::Fill);
 
     let version_picker = container(
@@ -109,6 +115,8 @@ pub fn edit_installations_tab_content(profile: &LauncherProfile) -> Element<'sta
         name_selector,
         Space::new(Length::Fill, 13),
         mod_loader_picker,
+        Space::new(Length::Fill, 13),
+        mod_loader_version_picker,
         Space::new(Length::Fill, 13),
         version_picker,
         Space::new(Length::Fill, 13),

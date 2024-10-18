@@ -65,7 +65,8 @@ impl Default for LauncherProfiles {
         Self {
             je_client_profiles: vec![
                 LauncherProfile::new("Latest Release".to_owned(), ModLoader::Vanilla, "latest-release".to_owned(), LauncherProfileIcon::Grass),
-                LauncherProfile::new("Latest Snapshot".to_owned(), ModLoader::Vanilla, "latest-snapshot".to_owned(), LauncherProfileIcon::Grass),
+                LauncherProfile::new("Latest Snapshot".to_owned(), ModLoader::Vanilla, "latest-snapshot".to_owned(), LauncherProfileIcon::CraftingTable),
+                LauncherProfile::new("Fabric".to_owned(), ModLoader::Fabric, "latest-release".to_owned(), LauncherProfileIcon::Bookshelf),
             ],
             settings: LauncherPersistentState::new(1),
         }
@@ -184,6 +185,14 @@ impl LauncherProfile {
     pub fn set_height(&mut self, height: Option<u32>) {
         self.height = height;
     }
+
+    pub fn mod_loader_version(&self) -> &str {
+        &self.mod_loader_version
+    }
+
+    pub fn set_mod_loader_version(&mut self, mod_loader_version: String) {
+        self.mod_loader_version = mod_loader_version;
+    }
 }
 
 impl Default for LauncherProfile {
@@ -192,12 +201,12 @@ impl Default for LauncherProfile {
             name: "Unnamed Profile".to_string(),
             uuid: random(),
             mod_loader: Default::default(),
-            mod_loader_version: String,
+            mod_loader_version: "latest-stable".to_owned(),
             version_name: "latest-release".to_string(),
             mc_directory: "%appdata%/.minecraft/".to_string(), // TODO default path is OS dependent
             icon: Default::default(),
             additional_args: None,
-            memory: 2,
+            memory: memory_default(),
             width: None,
             height: None,
         }
