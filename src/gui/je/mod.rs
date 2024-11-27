@@ -14,6 +14,7 @@ use iced::alignment::{Horizontal, Vertical};
 use iced::widget::{button, column, container, row, text, Space, markdown};
 use iced::{Element, Length};
 use crate::gui::style::{dark_container_style, generic_button_style};
+use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
 use crate::launcher_rewrite::profiles::{LauncherProfile, PROFILES};
 
 pub struct JeGuiState {
@@ -106,9 +107,11 @@ impl JeGuiState {
         match change {
             JeProfileChanged::VersionChanged(ver) => {
                 self.profile_edit.set_version_name(ver);
+                validate_mod_loader_version(&mut self.profile_edit);
             }
             JeProfileChanged::ModLoaderChanged(loader) => {
                 self.profile_edit.set_mod_loader(loader);
+                validate_mod_loader_version(&mut self.profile_edit);
             }
             JeProfileChanged::NameChanged(name) => {
                 self.profile_edit.set_name(name);
@@ -194,5 +197,22 @@ impl JeGuiState {
 
     pub fn selected_profile_id(&self) -> u128 {
         self.selected_profile_id
+    }
+}
+
+fn validate_mod_loader_version(profile: &mut LauncherProfile) {
+    if let Some(loader_manifest) = profile.mod_loader().get_manifest() {
+        if !loader_manifest.contains(profile.version_name(), profile.mod_loader_version()) {
+            if loader_manifest.has_stable_loader_version_for_game_version(profile.version_name()) {
+                profile.set_mod_loader_version("latest-stable".to_owned());
+            }
+            else {
+                profile.set_mod_loader_version("latest-beta".to_owned());
+            }
+        }
+
+    }
+    else {
+        profile.set_mod_loader_version(String::new());
     }
 }

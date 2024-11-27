@@ -41,7 +41,8 @@ pub fn edit_installations_tab_content(profile: &LauncherProfile) -> Element<'sta
 
     version_list.extend(GAME_VERSION_MANIFEST.versions().iter().map(|(n, v)| v.id().into()));
 
-    let mod_loader_list = [ModLoader::Vanilla, ModLoader::Fabric];
+    let mod_loader_list: Vec<ModLoader> = [ModLoader::Vanilla, ModLoader::Fabric, ModLoader::Quilt, ModLoader::Forge, ModLoader::NeoForge].iter().filter(|l| l.get_manifest().map(|m| m.has_loader_for_game_version(GAME_VERSION_MANIFEST.sanitize_version_name(profile.version_name()))).unwrap_or(true)).cloned().collect();
+
 
     let header = container(text(format!("Editing Profile:   `{}`", profile.name()))).center_x(Length::Fill);
 
@@ -52,9 +53,16 @@ pub fn edit_installations_tab_content(profile: &LauncherProfile) -> Element<'sta
     let mod_loader_picker = container(row![container(text("Mod Loader: ")).center_y(Length::Fill).width(240), container(PickList::new(mod_loader_list, Some(profile.mod_loader()), |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::ModLoaderChanged(loader)))).center_y(Length::Fill).width(240),].height(40))
         .center_x(Length::Fill);
 
-    let loader_version_list = ["latest-stable".to_owned(), "latest-beta".to_owned()];
+    let mut loader_version_list = profile.mod_loader().get_manifest().map(|m| m.get_loader_versions(GAME_VERSION_MANIFEST.sanitize_version_name(profile.version_name())).iter().map(|v| v.version_name().to_owned()).collect()).unwrap_or(Vec::new());  //["latest-stable".to_owned(), "latest-beta".to_owned()];
+    if !loader_version_list.is_empty() {
+        loader_version_list.insert(0, "latest-beta".to_owned())
+    }
+    if profile.mod_loader().get_manifest().map(|m| m.has_stable_loader_version_for_game_version(GAME_VERSION_MANIFEST.sanitize_version_name(profile.version_name()))).unwrap_or(false) {
+        loader_version_list.insert(0, "latest-stable".to_owned())
+    }
 
-    let mod_loader_version_picker = container(row![container(text("Loader Version: ")).center_y(Length::Fill).width(240), container(PickList::new(loader_version_list, Some(profile.mod_loader_version().to_owned()), |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::LoaderVersionChanged(loader.to_owned())))).center_y(Length::Fill).width(240),].height(40))
+    let picked = if loader_version_list.is_empty() { None } else { Some(profile.mod_loader_version().to_owned()) };
+    let mod_loader_version_picker = container(row![container(text("Loader Version: ")).center_y(Length::Fill).width(240), container(PickList::new(loader_version_list, picked, |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::LoaderVersionChanged(loader.to_owned()))).width(220)).center_y(Length::Fill).width(240),].height(40))
         .center_x(Length::Fill);
 
     let version_picker = container(

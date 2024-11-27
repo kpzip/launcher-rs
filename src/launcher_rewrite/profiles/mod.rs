@@ -8,6 +8,8 @@ use rand::random;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, Visitor};
 use crate::launcher_rewrite::authentication::LOGGED_IN_ACCOUNT_DATA;
+use crate::launcher_rewrite::manifest::GameVersionManifest;
+use crate::launcher_rewrite::mod_loader_version_manifest::{FABRIC_MANIFEST, FORGE_MANIFEST, ModLoaderVersionManifest, NEO_FORGE_MANIFEST, QUILT_MANIFEST};
 use crate::launcher_rewrite::path_handler::{LAUNCHER_CFG_PATH, TOKENS_FILE_PATH};
 use crate::launcher_rewrite::profiles::icon::LauncherProfileIcon;
 use crate::launcher_rewrite::util::config_file::{load_from_file, save_to_file};
@@ -79,6 +81,7 @@ pub struct LauncherProfile {
     #[serde(rename = "id")]
     uuid: u128,
     mod_loader: ModLoader,
+    // INVARIANCE: Should always be a valid version for the selected mod loader and should be an empty string when mod_loader is VANILLA. Can also be latest-stable or latest-beta if the specified minecraft version has such a mod loader version
     mod_loader_version: String,
     version_name: String,
     mc_directory: String,
@@ -201,7 +204,7 @@ impl Default for LauncherProfile {
             name: "Unnamed Profile".to_string(),
             uuid: random(),
             mod_loader: Default::default(),
-            mod_loader_version: "latest-stable".to_owned(),
+            mod_loader_version: String::new(),
             version_name: "latest-release".to_string(),
             mc_directory: "%appdata%/.minecraft/".to_string(), // TODO default path is OS dependent
             icon: Default::default(),
@@ -233,6 +236,16 @@ pub fn fabric_version() -> String {
 }
 
 impl ModLoader {
+
+    pub fn get_manifest(&self) -> Option<&ModLoaderVersionManifest> {
+        match self {
+            ModLoader::Vanilla => None,
+            ModLoader::Fabric => Some(&FABRIC_MANIFEST),
+            ModLoader::Quilt => Some(&QUILT_MANIFEST),
+            ModLoader::Forge => Some(&FORGE_MANIFEST),
+            ModLoader::NeoForge => Some(&NEO_FORGE_MANIFEST),
+        }
+    }
 
     pub fn as_str_non_pretty(&self) -> &'static str {
         match self {
