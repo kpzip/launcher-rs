@@ -93,7 +93,7 @@ impl From<bool> for ModLoaderVersionType {
     }
 }
 
-pub struct ModLoaderVersionMap<F: Fn(&str) -> Option<Vec<ModLoaderVersionInfo>>> {
+pub struct ModLoaderVersionMap<F: Fn(&str) -> Vec<ModLoaderVersionInfo>> {
     version_getter: F,
     versions_map: HashMap<String, Vec<ModLoaderVersionInfo>>,
 }

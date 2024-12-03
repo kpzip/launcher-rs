@@ -21,13 +21,16 @@ impl From<FabricCompatibleVersionInfo> for ModLoaderVersionInfo {
     }
 }
 
-pub fn get_compatible_versions(mc_version: &str) -> Option<Vec<ModLoaderVersionInfo>> {
+pub fn get_compatible_versions(mc_version: &str) -> Vec<ModLoaderVersionInfo> {
     // Sanitize just in case
     // Can probably be commented out
     let mc_version = GAME_VERSION_MANIFEST.sanitize_version_name(mc_version);
     let url = format!("{}{}", FABRIC_COMPATIBLE_VERSIONS_URL, mc_version);
-    let response_json = DEFAULT_DOWNLOADER_CLIENT.get(url).send().ok()?;
-    let deserialized_vec: Vec<FabricCompatibleVersionInfo> = serde_json::from_reader(response_json).ok()?;
-    let converted = deserialized_vec.into_iter().map(Into::into).collect();
-    Some(converted)
+    if let Ok(response_json) = DEFAULT_DOWNLOADER_CLIENT.get(url).send() {
+        if let Ok(deserialized_vec) = serde_json::from_reader(response_json) {
+            let converted = deserialized_vec.into_iter().map(Into::into).collect();
+            return converted
+        }
+    }
+    return Vec::new()
 }
