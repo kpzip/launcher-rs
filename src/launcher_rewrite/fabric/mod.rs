@@ -27,7 +27,7 @@ pub fn get_compatible_versions(mc_version: &str) -> Vec<ModLoaderVersionInfo> {
     let mc_version = GAME_VERSION_MANIFEST.sanitize_version_name(mc_version);
     let url = format!("{}{}", FABRIC_COMPATIBLE_VERSIONS_URL, mc_version);
     if let Ok(response_json) = DEFAULT_DOWNLOADER_CLIENT.get(url).send() {
-        if let Ok(deserialized_vec) = serde_json::from_reader(response_json) {
+        if let Ok(deserialized_vec) = serde_json::from_reader::<_, FabricCompatibleVersionsResponse>(response_json) {
             let converted = deserialized_vec.into_iter().map(Into::into).collect();
             return converted
         }

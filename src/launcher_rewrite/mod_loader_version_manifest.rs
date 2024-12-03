@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::sync::{LazyLock, OnceLock};
+use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 use crate::launcher_rewrite::profiles::ModLoader;
 
 pub static FABRIC_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(Default::default);
@@ -11,24 +11,21 @@ pub static NEO_FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::ne
 #[derive(Debug, Default, Clone)]
 pub struct ModLoaderVersionManifest {
     loader: ModLoader,
-    versions_map: HashMap<String, Vec<ModLoaderVersionInfo>>,
+    versions_map: ModLoaderVersionMap,
 }
 
 impl ModLoaderVersionManifest {
 
-    pub fn get_loader_versions(&self, game_version_name: &str) -> &[ModLoaderVersionInfo] {
-        self.versions_map.get(game_version_name).map(|v| v.as_ref()).unwrap_or(&[])
+    pub fn get_loader_versions(&self, game_version_name: &str) -> Arc<[ModLoaderVersionInfo]> {
+        self.versions_map.get(game_version_name)
     }
 
     pub fn has_loader_for_game_version(&self, game_version_name: &str) -> bool {
-        self.versions_map.contains_key(game_version_name)
+        self.versions_map.contains(game_version_name)
     }
 
     pub fn has_stable_loader_version_for_game_version(&self, game_version_name: &str) -> bool {
-        if let Some(loader_versions) = self.versions_map.get(game_version_name) {
-            return loader_versions.iter().filter(|loader_version| loader_version.is_stable()).next().is_some()
-        }
-        false
+        self.versions_map.get(game_version_name).iter().filter(|loader_version| loader_version.is_stable()).next().is_some()
     }
 
     pub fn contains(&self, game_version_name: &str, loader_version_name: &str) -> bool {
@@ -93,7 +90,47 @@ impl From<bool> for ModLoaderVersionType {
     }
 }
 
-pub struct ModLoaderVersionMap<F: Fn(&str) -> Vec<ModLoaderVersionInfo>> {
-    version_getter: F,
-    versions_map: HashMap<String, Vec<ModLoaderVersionInfo>>,
+#[derive(Debug)]
+pub struct ModLoaderVersionMap {
+    version_getter: fn(&str) -> Vec<ModLoaderVersionInfo>,
+    versions_map: Mutex<HashMap<String, Arc<[ModLoaderVersionInfo]>>>,
+}
+
+impl ModLoaderVersionMap {
+
+    pub fn get(&self, game_version: &str) -> Arc<[ModLoaderVersionInfo]> {
+        let mut versions_lock = self.versions_map.lock().unwrap();
+        if let Some(val) = versions_lock.get(game_version) {
+            val.clone()
+        }
+        else {
+            let compatible_versions = (self.version_getter)(game_version);
+            versions_lock.insert(game_version.to_owned(), compatible_versions.into());
+            versions_lock.get(game_version).unwrap().clone()
+        }
+
+    }
+
+    pub fn contains(&self, game_version: &str) -> bool {
+        self.versions_map.lock().unwrap().contains_key(game_version)
+    }
+
+}
+
+impl Default for ModLoaderVersionMap {
+    fn default() -> Self {
+        Self {
+            version_getter: |_| Vec::new(),
+            versions_map: Mutex::new(HashMap::new()),
+        }
+    }
+}
+
+impl Clone for ModLoaderVersionMap {
+    fn clone(&self) -> Self {
+        Self {
+            version_getter: self.version_getter,
+            versions_map: Mutex::new(self.versions_map.lock().unwrap().clone()),
+        }
+    }
 }
