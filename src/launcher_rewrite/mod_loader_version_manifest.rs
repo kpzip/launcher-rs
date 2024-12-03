@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{LazyLock, OnceLock};
 use crate::launcher_rewrite::profiles::ModLoader;
@@ -70,6 +71,10 @@ impl ModLoaderVersionInfo {
     pub fn version_client_url(&self) -> &str {
         &self.version_client_url
     }
+
+    pub fn new(version_name: String, version_type: ModLoaderVersionType, version_client_url: String) -> Self {
+        Self { version_name, version_type, version_client_url }
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
@@ -77,4 +82,18 @@ pub enum ModLoaderVersionType {
     #[default]
     STABLE,
     BETA
+}
+
+impl From<bool> for ModLoaderVersionType {
+    fn from(is_stable: bool) -> Self {
+        match is_stable {
+            true => ModLoaderVersionType::STABLE,
+            false => ModLoaderVersionType::BETA,
+        }
+    }
+}
+
+pub struct ModLoaderVersionMap<F: Fn(&str) -> Option<Vec<ModLoaderVersionInfo>>> {
+    version_getter: F,
+    versions_map: HashMap<String, Vec<ModLoaderVersionInfo>>,
 }
