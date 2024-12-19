@@ -1,31 +1,32 @@
 mod internal;
 
+use crate::launcher_rewrite::assets::AssetsIndex;
+use crate::launcher_rewrite::extractor::extract_dlls_from_jar;
+use crate::launcher_rewrite::installer::Downloadable;
+use crate::launcher_rewrite::launch_properties::internal::{Arg, AssetIndexInfo, ClientJson, LibraryFormat, LoggingInfo, RuleAction};
+use crate::launcher_rewrite::path_handler::{get_assets_index_dir, get_bin_path, get_log_configs_folder, get_vanilla_client_json_path, BIN_PATH};
+use crate::launcher_rewrite::profiles::ModLoader;
+use crate::launcher_rewrite::util::hash;
+use crate::launcher_rewrite::util::hash::{sha1_from_base64_str, FileHash};
+use crate::launcher_rewrite::version_type::VersionType;
+use crate::util::flip_result_option;
+use chrono::{DateTime, Utc};
+use reqwest::Url;
+use serde::de::{Error, MapAccess, Unexpected, Visitor};
+use serde::{de, Deserialize, Deserializer};
 use std::env::consts::{ARCH, OS};
-use std::{fs, vec};
 use std::iter::Map;
 use std::num::NonZeroU64;
 use std::ops::BitAnd;
 use std::path::PathBuf;
 use std::slice::Iter;
 use std::str::FromStr;
-use chrono::{DateTime, Utc};
-use reqwest::Url;
-use serde::{de, Deserialize, Deserializer};
-use serde::de::{Error, MapAccess, Unexpected, Visitor};
-use crate::launcher_rewrite::assets::AssetsIndex;
-use crate::launcher_rewrite::extractor::extract_dlls_from_jar;
-use crate::launcher_rewrite::installer::Downloadable;
-use crate::launcher_rewrite::launch_properties::internal::{AssetIndexInfo, ClientJson, LibraryFormat, LoggingInfo, RuleAction};
-use crate::launcher_rewrite::path_handler::{BIN_PATH, get_assets_index_dir, get_bin_path, get_log_configs_folder, get_vanilla_client_json_path};
-use crate::launcher_rewrite::profiles::ModLoader;
-use crate::launcher_rewrite::util::hash;
-use crate::launcher_rewrite::util::hash::{FileHash, sha1_from_base64_str};
-use crate::launcher_rewrite::version_type::VersionType;
-use crate::util::flip_result_option;
+use std::{fs, vec};
 
 #[derive(Debug, Clone)]
 pub struct Version {
     id: String,
+    game_version: String,
     time: DateTime<Utc>,
     main_class: String,
     version_type: VersionType,
@@ -36,13 +37,12 @@ pub struct Version {
 }
 
 impl Version {
-
     pub fn from_file() -> Self {
         todo!()
     }
 
     pub fn install(&self) {
-        let version_name = self.id.as_str();
+        let version_name = self.game_version.as_str();
 
         // Libraries
         self.libs.iter().for_each(|lib| lib.download(version_name));
@@ -66,6 +66,10 @@ impl Version {
 
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    pub fn game_version(&self) -> &str {
+        &self.game_version
     }
 
     pub fn time(&self) -> DateTime<Utc> {
@@ -98,10 +102,9 @@ impl Version {
 }
 
 impl<'de> Deserialize<'de> for Version {
-
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         let json: ClientJson = ClientJson::deserialize(deserializer)?;
         let mut file: Option<String> = None;
@@ -111,13 +114,18 @@ impl<'de> Deserialize<'de> for Version {
             // TODO think of a good way to not deserialize some files twice
             // TODO download inherited file if needed
 
-            file = Some(fs::read_to_string(get_vanilla_client_json_path(inheritance, ModLoader::Vanilla)).map_err(|e| Error::custom(e))?); // Only allow inheriting from vanilla for now
+            file = Some(fs::read_to_string(get_vanilla_client_json_path(inheritance, ModLoader::Vanilla, "")).map_err(|e| Error::custom(e))?); // Only allow inheriting from vanilla for now
             inherited = Some(serde_json::from_str(file.as_ref().unwrap().as_str()).map_err(|e| Error::custom(e))?);
-            if inherited.as_ref().unwrap().inherits_from.is_some() { return Err(Error::custom(">2-level client json inheritance is currently unsupported.")) }
+            if inherited.as_ref().unwrap().inherits_from.is_some() {
+                return Err(Error::custom(">2-level client json inheritance is currently unsupported."));
+            }
         }
 
         let id: String = json.version_id.into();
-        if json.time != json.release_time { return Err(Error::custom("Time and release time do not match!")) }
+        let game_version: String = if let Some(i) = &inherited { i.version_id.into() } else { json.version_id.into() };
+        if json.time != json.release_time {
+            return Err(Error::custom("Time and release time do not match!"));
+        }
         let time = json.time;
         let main_class: String = first_or_second_or_missing(json.main_class.map(|s| String::from(s)), inherited.as_ref(), |j| Ok(j.main_class.map(|s| String::from(s))), "mainClass")?; //json.main_class.into();
         let version_type = first_or_second_or_missing(json.release_type, inherited.as_ref(), |j| Ok(j.release_type), "type")?;
@@ -135,10 +143,16 @@ impl<'de> Deserialize<'de> for Version {
         let mut libs = json.libraries.into_iter().map(map_library).filter_map(flip_result_option).collect::<Result<Vec<LibraryInfo>, D::Error>>()?;
         // Add Main Jar as a library since its easier that way
         let downloads = first_or_second_or_missing(json.downloads, inherited.as_ref(), |j| Ok(j.downloads), "downloads")?;
-        libs.push(LibraryInfo::new(Url::parse(downloads.client.url).map_err(|e| Error::custom(e))?, match downloads.client.sha1 {
-            None => None,
-            Some(h) => Some(FileHash::Sha1(sha1_from_base64_str(h)?)),
-        }, downloads.client.size, String::from("client.jar")));
+        libs.push(LibraryInfo::new(
+            Url::parse(downloads.client.url).map_err(|e| Error::custom(e))?,
+            match downloads.client.sha1 {
+                None => None,
+                Some(h) => Some(FileHash::Sha1(sha1_from_base64_str(h)?)),
+            },
+            downloads.client.size,
+            String::from("client.jar"),
+            String::from("client"),
+        ));
 
         let assets = first_or_second_or_missing(unpack_assets_index(json.asset_index)?, inherited.as_ref(), |j| unpack_assets_index(j.asset_index), "assetIndex")?;
 
@@ -146,17 +160,27 @@ impl<'de> Deserialize<'de> for Version {
         let log_arg = first_or_second_or_missing(json.logging, inherited.as_ref(), |j| Ok(j.logging), "logging")?.argument.replace("${path}", "${logging_path}");
         jvm_args.push(Argument::without_rules(vec![log_arg]));
 
-
         if let Some(inherit) = inherited {
+            let a1 = Argument::without_rules(map_unconditional_args(inherit.arguments.game.iter()));
             game_args.extend(map_args(inherit.arguments.game)?);
+            game_args.push(a1);
+            let a2 = Argument::without_rules(map_unconditional_args(inherit.arguments.jvm.iter()));
             jvm_args.extend(map_args(inherit.arguments.jvm)?);
-            libs.extend(inherit.libraries.into_iter().map(map_library).filter_map(flip_result_option).collect::<Result<Vec<LibraryInfo>, D::Error>>()?);
+            jvm_args.push(a2);
+            let extend_by = inherit.libraries.into_iter().map(map_library).filter_map(flip_result_option).filter(|l| match l {
+                Ok(lib) => {
+                    libs.iter().filter(|l| l.name == lib.name).next().is_none()
+                }
+                Err(_) => { true }
+            }).collect::<Result<Vec<LibraryInfo>, D::Error>>()?;
+            libs.extend(extend_by);
         }
 
         // TODO resolve references and consolidate structs
 
         Ok(Self {
             id,
+            game_version,
             time,
             main_class,
             version_type,
@@ -166,32 +190,45 @@ impl<'de> Deserialize<'de> for Version {
             log_info,
         })
     }
-
 }
 
 fn first_or_second_or_missing<T, S, F, E>(first: Option<T>, second_container: Option<S>, unpacker: F, error_msg: &'static str) -> Result<T, E>
 where
     E: de::Error,
-    F: FnOnce(S) -> Result<Option<T>, E>
+    F: FnOnce(S) -> Result<Option<T>, E>,
 {
     match first {
-        None => {
-            unpacker(second_container.ok_or(Error::missing_field(error_msg))?)?.ok_or(Error::missing_field(error_msg))
-        }
-        Some(s) => { Ok(s) }
+        None => unpacker(second_container.ok_or(Error::missing_field(error_msg))?)?.ok_or(Error::missing_field(error_msg)),
+        Some(s) => Ok(s),
     }
 }
 
 fn map_args<E: Error>(args_in: Vec<internal::Arg>) -> Result<Vec<Argument>, E> {
-    args_in.into_iter().map(|a| if let internal::Arg::Conditional { rules, value } = a { Ok(Some(Argument::with_rules(value.into_vec(), rules.into_iter().map(Rule::try_from_internal).collect::<Result<Vec<Rule>, E>>()?))) } else { Ok(None) }).filter_map(|r| if let Ok(arg) = r { if let Some(inner) = arg { Some(Ok(inner)) } else { None } } else { Some(Err(r.err().unwrap())) }).collect::<Result<Vec<Argument>, E>>()
+    args_in
+        .into_iter()
+        .map(|a| match a {
+            Arg::Always(v) => { Ok(None) }
+            Arg::Conditional {rules, value} => { Ok(Some(Argument::with_rules(value.into_vec(), rules.into_iter().map(Rule::try_from_internal).collect::<Result<Vec<Rule>, E>>()?))) }
+        })
+        .filter_map(|r| {
+            if let Ok(arg) = r {
+                if let Some(inner) = arg {
+                    Some(Ok(inner))
+                } else {
+                    None
+                }
+            } else {
+                Some(Err(r.err().unwrap()))
+            }
+        })
+        .collect::<Result<Vec<Argument>, E>>()
 }
 
 fn map_unconditional_args<'a>(args_in: impl Iterator<Item = &'a internal::Arg<'a>>) -> Vec<String> {
-    args_in.map(|a| if let internal::Arg::Always(s) = a { Some(String::from(*s)) } else { None }).filter_map(|s| s).collect()
+    args_in.map(|a| if let internal::Arg::Always(s) = a { Some(String::from(*s).replace(' ', "")) } else { None }).filter_map(|s| s).collect()
 }
 
 fn map_library<E: Error>(lib: internal::Library) -> Result<Option<LibraryInfo>, E> {
-
     const INVALID_MAVEN_NAME_TEXT: &'static str = "Valid maven Identifier: <groupId>:<artifactId>:<version>";
 
     let name = lib.name;
@@ -210,8 +247,8 @@ fn map_library<E: Error>(lib: internal::Library) -> Result<Option<LibraryInfo>, 
 
     let group_id_url = group_id.replace('.', "/");
 
-    let url= match lib.format {
-        LibraryFormat::Artifact { ref downloads} => Url::parse(downloads.artifact.info.url).map_err(E::custom)?,
+    let url = match lib.format {
+        LibraryFormat::Artifact { ref downloads } => Url::parse(downloads.artifact.info.url).map_err(E::custom)?,
         LibraryFormat::Plain { ref info } => Url::parse(format!("{}{}/{}/{}/{}-{}.jar", info.url, group_id_url.as_str(), artifact_id, version, artifact_id, version).as_str()).map_err(E::custom)?,
     };
     let name = match lib.format {
@@ -233,26 +270,37 @@ fn map_library<E: Error>(lib: internal::Library) -> Result<Option<LibraryInfo>, 
         },
     };
 
-    Ok(Some(LibraryInfo::new(url, check, size, name)))
+    Ok(Some(LibraryInfo::new(url, check, size, name, first.to_owned())))
 }
 
 fn unpack_assets_index<E: Error>(info: Option<internal::AssetIndexInfo>) -> Result<Option<AssetsIndexInfo>, E> {
     match info {
         None => Ok(None),
-        Some(a) => Ok(Some(AssetsIndexInfo::new(format!("{}.json", a.id), match a.download_info.sha1 {
-            None => None,
-            Some(hash_str) => Some(FileHash::Sha1(sha1_from_base64_str(hash_str)?)),
-        }, a.download_info.size, a.total_size, Url::parse(a.download_info.url).map_err(|e| Error::custom(e))?))),
+        Some(a) => Ok(Some(AssetsIndexInfo::new(
+            format!("{}.json", a.id),
+            match a.download_info.sha1 {
+                None => None,
+                Some(hash_str) => Some(FileHash::Sha1(sha1_from_base64_str(hash_str)?)),
+            },
+            a.download_info.size,
+            a.total_size,
+            Url::parse(a.download_info.url).map_err(|e| Error::custom(e))?,
+        ))),
     }
 }
 
 fn unpack_log_config<E: Error>(info: Option<internal::LoggingInfo>) -> Result<Option<LogConfigInfo>, E> {
     match info {
         None => Ok(None),
-        Some(l) => Ok(Some(LogConfigInfo::new(String::from(l.file.id), match l.file.sha1 {
-            None => None,
-            Some(hash_str) => Some(FileHash::Sha1(sha1_from_base64_str(hash_str)?)),
-        }, l.file.size, Url::parse(l.file.url).map_err(|e| Error::custom(e))?)))
+        Some(l) => Ok(Some(LogConfigInfo::new(
+            String::from(l.file.id),
+            match l.file.sha1 {
+                None => None,
+                Some(hash_str) => Some(FileHash::Sha1(sha1_from_base64_str(hash_str)?)),
+            },
+            l.file.size,
+            Url::parse(l.file.url).map_err(|e| Error::custom(e))?,
+        ))),
     }
 }
 
@@ -283,19 +331,12 @@ pub struct Argument {
 }
 
 impl Argument {
-
     fn without_rules(values: Vec<String>) -> Self {
-        Self {
-            values,
-            rules: Vec::new(),
-        }
+        Self { values, rules: Vec::new() }
     }
 
     fn with_rules(values: Vec<String>, rules: Vec<Rule>) -> Self {
-        Self {
-            values,
-            rules,
-        }
+        Self { values, rules }
     }
 
     pub fn values(&self) -> &Vec<String> {
@@ -318,7 +359,7 @@ impl Rule {
         let action = value.action;
         let mut condition = None;
         if value.os.len() + value.features.len() > 1 {
-            return Err(Error::custom("Only one condition per rule is currently supported."))
+            return Err(Error::custom("Only one condition per rule is currently supported."));
         }
         for (k, v) in value.os {
             condition = Some(match k {
@@ -340,10 +381,7 @@ impl Rule {
             });
             break;
         }
-        Ok(Self {
-            action,
-            condition,
-        })
+        Ok(Self { action, condition })
     }
 
     pub fn matches(self, is_demo_user: bool, has_custom_resolution: bool, has_quick_play_support: bool, has_quick_play_singleplayer: bool, has_quick_play_multiplayer: bool, has_quick_play_realms: bool) -> bool {
@@ -452,11 +490,12 @@ pub struct LibraryInfo {
     verifier: Option<FileHash>,
     size: Option<NonZeroU64>,
     file_name: String,
+    name: String,
 }
 
 impl LibraryInfo {
-    pub fn new(download_url: Url, verifier: Option<FileHash>, size: Option<NonZeroU64>, file_name: String) -> Self {
-        Self { download_url, verifier, size, file_name }
+    pub fn new(download_url: Url, verifier: Option<FileHash>, size: Option<NonZeroU64>, file_name: String, name: String) -> Self {
+        Self { download_url, verifier, size, file_name, name }
     }
 }
 
