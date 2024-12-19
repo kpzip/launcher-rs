@@ -38,7 +38,10 @@ pub fn launch_game(profile_id: u128) {
             let need_to_install = !INSTALLED_VERSIONS.read().unwrap().contains(version_info.id(), profile.mod_loader(), None);
 
             if need_to_install {
+                // Download vanilla json
                 version_info.download(version_info.id());
+                // Download modded version json
+
             }
 
             // TODO handle installing modded versions
@@ -56,7 +59,7 @@ pub fn launch_game(profile_id: u128) {
 
 
             // TODO Error Handling
-            let json_path = get_vanilla_client_json_path(version_info.id(), profile.mod_loader());
+            let json_path = get_vanilla_client_json_path(version_info.id(), profile.mod_loader(), profile.mod_loader_version());
             let client_file_contents = fs::read_to_string(json_path).expect("Failed to read client json");
             let version: Version = serde_json::from_str(client_file_contents.as_str()).expect("Invalid Client Json!");
 

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::env::current_dir;
 use std::ffi::OsString;
 use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
@@ -33,25 +34,26 @@ pub const LAUNCHER_CFG_LOCATION: &str = "profiles.json";
 pub const TOKENS_FILE_LOCATION: &str = "tokens.json";
 pub const INSTALLED_VERSIONS_FILE_LOCATION: &str = "installed.json";
 
-// TODO possible bug? versions folder shouldnt be included
+// Vanilla is special and doesn't need a folder
 pub const VANILLA_CLIENT_JSON_NAME: &str = "vanilla.json";
-pub const FABRIC_CLIENT_JSON_NAME: &str = "fabric.json";
-pub const QUILT_CLIENT_JSON_NAME: &str = "quilt.json";
-pub const FORGE_CLIENT_JSON_NAME: &str = "forge.json";
-pub const NEO_FORGE_CLIENT_JSON_NAME: &str = "neo_forge.json";
+
+pub const FABRIC_CLIENT_JSON_FOLDER_NAME: &str = "fabric";
+pub const QUILT_CLIENT_JSON_FOLDER_NAME: &str = "quilt";
+pub const FORGE_CLIENT_JSON_FOLDER_NAME: &str = "forge";
+pub const NEO_FORGE_CLIENT_JSON_FOLDER_NAME: &str = "neo_forge";
 
 pub static GAME_VERSION_MANIFEST_PATH: LazyLock<PathBuf> = LazyLock::new(game_version_manifest_path);
 pub static LAUNCHER_CFG_PATH: LazyLock<PathBuf> = LazyLock::new(launcher_cfg_path);
 pub static TOKENS_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(token_file_path);
 pub static INSTALLED_VERSIONS_FILE_PATH: LazyLock<PathBuf> = LazyLock::new(installed_versions_file_path);
 
-fn client_json_name(mod_loader: ModLoader) -> &'static str {
+fn client_json_name(mod_loader: ModLoader, loader_version: &str) -> Cow<'static, str> {
     match mod_loader {
-        ModLoader::Vanilla => VANILLA_CLIENT_JSON_NAME,
-        ModLoader::Fabric => FABRIC_CLIENT_JSON_NAME,
-        ModLoader::Quilt => QUILT_CLIENT_JSON_NAME,
-        ModLoader::Forge => FORGE_CLIENT_JSON_NAME,
-        ModLoader::NeoForge => NEO_FORGE_CLIENT_JSON_NAME,
+        ModLoader::Vanilla => VANILLA_CLIENT_JSON_NAME.into(),
+        ModLoader::Fabric => format!("{}{}{}.json", FABRIC_CLIENT_JSON_FOLDER_NAME, PATH_SEP, loader_version).into(),
+        ModLoader::Quilt => format!("{}{}{}.json", QUILT_CLIENT_JSON_FOLDER_NAME, PATH_SEP, loader_version).into(),
+        ModLoader::Forge => format!("{}{}{}.json", FORGE_CLIENT_JSON_FOLDER_NAME, PATH_SEP, loader_version).into(),
+        ModLoader::NeoForge => format!("{}{}{}.json", NEO_FORGE_CLIENT_JSON_FOLDER_NAME, PATH_SEP, loader_version).into(),
     }
 }
 
@@ -73,8 +75,11 @@ pub fn get_assets_root() -> PathBuf {
     from_launcher_dir([ASSETS_FOLDER])
 }
 
-pub fn get_vanilla_client_json_path(version_name: &str, mod_loader: ModLoader) -> PathBuf {
-    from_launcher_dir([VERSIONS_FOLDER, version_name, client_json_name(mod_loader)])
+pub fn get_vanilla_client_json_path(version_name: &str, mod_loader: ModLoader, mut loader_version: &str) -> PathBuf {
+    if let Some(manifest) = mod_loader.get_manifest() {
+        loader_version = manifest.sanitize_loader_version_name(version_name)
+    }
+    from_launcher_dir([VERSIONS_FOLDER, version_name, client_json_name(mod_loader, loader_version).as_ref()])
 }
 
 pub fn get_assets_index_dir(index_name: &str) -> PathBuf {

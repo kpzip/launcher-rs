@@ -196,7 +196,7 @@ impl Downloadable for GameVersionInfo {
 
     fn get_file_path(&self, version_name: &str) -> PathBuf {
         debug_assert!(version_name == self.id.as_str());
-        get_vanilla_client_json_path(version_name, ModLoader::Vanilla)
+        get_vanilla_client_json_path(version_name, ModLoader::Vanilla, "")
     }
 
     fn get_hash(&self) -> Option<FileHash> {

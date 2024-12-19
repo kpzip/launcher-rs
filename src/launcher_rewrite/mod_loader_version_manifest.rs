@@ -43,6 +43,30 @@ impl ModLoaderVersionManifest {
         }
     }
 
+    pub fn sanitize_loader_version_name<'a>(&'a self, game_version_name: &str, loader_version_name: &'a str) -> &'a str {
+        match loader_version_name {
+            "latest-stable" => {
+                if let Some(v) = self.get_loader_versions(game_version_name).iter().find(|v| v.is_stable()) {
+                    v.version_name.as_str()
+                }
+                else {
+                    panic!("No stable loader version found for loader {:?} for game version {}.", self.loader, game_version_name);
+                }
+            },
+            "latest-beta" => {
+                if let Some(v) = self.get_loader_versions(game_version_name).get(0) {
+                    v.version_name.as_str()
+                }
+                else {
+                    panic!("No loader version found for loader {:?} for game version {}.", self.loader, game_version_name);
+                }
+            }
+            n => {
+                n
+            }
+        }
+    }
+
     pub fn new(loader: ModLoader, version_func: fn(&str) -> Vec<ModLoaderVersionInfo>) -> Self {
         Self { loader, versions_map: ModLoaderVersionMap::new(version_func, Mutex::new(HashMap::new())) }
     }
