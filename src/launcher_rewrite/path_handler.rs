@@ -34,11 +34,11 @@ pub const TOKENS_FILE_LOCATION: &str = "tokens.json";
 pub const INSTALLED_VERSIONS_FILE_LOCATION: &str = "installed.json";
 
 // TODO possible bug? versions folder shouldnt be included
-pub const VANILLA_CLIENT_JSON_NAME: &str = concatcp!(VERSIONS_FOLDER, PATH_SEP, "vanilla.json");
-pub const FABRIC_CLIENT_JSON_NAME: &str = concatcp!(VERSIONS_FOLDER, PATH_SEP, "fabric.json");
-pub const QUILT_CLIENT_JSON_NAME: &str = concatcp!(VERSIONS_FOLDER, PATH_SEP, "quilt.json");
-pub const FORGE_CLIENT_JSON_NAME: &str = concatcp!(VERSIONS_FOLDER, PATH_SEP, "forge.json");
-pub const NEO_FORGE_CLIENT_JSON_NAME: &str = concatcp!(VERSIONS_FOLDER, PATH_SEP, "neo_forge.json");
+pub const VANILLA_CLIENT_JSON_NAME: &str = "vanilla.json";
+pub const FABRIC_CLIENT_JSON_NAME: &str = "fabric.json";
+pub const QUILT_CLIENT_JSON_NAME: &str = "quilt.json";
+pub const FORGE_CLIENT_JSON_NAME: &str = "forge.json";
+pub const NEO_FORGE_CLIENT_JSON_NAME: &str = "neo_forge.json";
 
 pub static GAME_VERSION_MANIFEST_PATH: LazyLock<PathBuf> = LazyLock::new(game_version_manifest_path);
 pub static LAUNCHER_CFG_PATH: LazyLock<PathBuf> = LazyLock::new(launcher_cfg_path);
@@ -74,7 +74,7 @@ pub fn get_assets_root() -> PathBuf {
 }
 
 pub fn get_vanilla_client_json_path(version_name: &str, mod_loader: ModLoader) -> PathBuf {
-    from_launcher_dir([version_name, client_json_name(mod_loader)])
+    from_launcher_dir([VERSIONS_FOLDER, version_name, client_json_name(mod_loader)])
 }
 
 pub fn get_assets_index_dir(index_name: &str) -> PathBuf {
