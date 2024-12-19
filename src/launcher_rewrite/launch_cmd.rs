@@ -2,7 +2,7 @@ use std::os::windows::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, Command};
 use std::sync::atomic::Ordering;
-use std::thread;
+use std::{fs, thread};
 use aho_corasick::AhoCorasick;
 use crate::gui::game_output::open_game_output_window;
 use crate::launcher_rewrite::GAME_INSTANCE_COUNT;
@@ -20,6 +20,7 @@ impl Version {
     pub fn launch(&self, username: &str, uuid: &str, token: &str, resolution: Option<(u32, u32)>, game_dir: &Path) {
         #[cfg(debug_assertions)]
         let game_dir = DEV_GAME_DIR.as_path();
+        fs::create_dir_all(game_dir).expect("Failed to create game directory");
         let mut cmd = Command::new("java");
         cmd.current_dir(game_dir).raw_arg(get_jvm_args(&self, resolution).as_str()).raw_arg(self.main_class()).raw_arg(get_game_args(&self, username, uuid, token, resolution, game_dir).as_str());
         println!("Command: {:?}", cmd);
