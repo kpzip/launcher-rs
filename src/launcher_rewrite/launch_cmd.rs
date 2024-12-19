@@ -23,6 +23,7 @@ impl Version {
         fs::create_dir_all(game_dir).expect("Failed to create game directory");
         let mut cmd = Command::new("java");
         cmd.current_dir(game_dir).raw_arg(get_jvm_args(&self, resolution).as_str()).raw_arg(self.main_class()).raw_arg(get_game_args(&self, username, uuid, token, resolution, game_dir).as_str());
+        println!("Main Class: {}", self.main_class());
         println!("Command: {:?}", cmd);
         let _ = thread::Builder::new().name("Game Process Thread".to_owned()).spawn(move || {
             GAME_INSTANCE_COUNT.fetch_add(1, Ordering::SeqCst);
@@ -41,7 +42,7 @@ impl Version {
 fn get_classpath(version: &Version) -> String {
     let mut classpath = String::new();
     version.libs().iter().for_each(|lib| {
-        classpath.push_str(lib.get_file_path(version.id()).to_str().unwrap());
+        classpath.push_str(lib.get_file_path(version.game_version()).to_str().unwrap());
         classpath.push(CLASSPATH_SEPARATOR);
     });
     if classpath.ends_with(CLASSPATH_SEPARATOR) {
@@ -76,7 +77,7 @@ fn get_game_args(version: &Version, username: &str, uuid: &str, token: &str, res
 
     let unformatted: String = version.arguments().game_args().iter().filter(|a| a.matches(!owns_game, has_custom_resolution, quick_play, quick_play_singleplayer, quick_play_multiplayer, quick_play_realms)).map(|a| a.values()).flatten().map(|s| s.as_str()).intersperse(" ").collect();
     const PLACEHOLDERS: &[&str] = &["${auth_player_name}", "${version_name}", "${game_directory}", "${assets_root}", "${assets_index_name}", "${auth_uuid}", "${auth_access_token}", "${clientid}", "${auth_xuid}", "${user_type}", "${version_type}", "${resolution_width}", "${resolution_height}", "${quickPlayPath}", "${quickPlaySingleplayer}", "${quickPlayMultiplayer}", "${quickPlayRealms}"];
-    let replace = [username, version.id(), game_dir, assets_root, assets_name, uuid, token, "telemetry", "asdf", "msa", version.version_type().as_str(), width, height, "placeholder", "placeholder", "placeholder", "placeholder"];
+    let replace = [username, version.game_version(), game_dir, assets_root, assets_name, uuid, token, "telemetry", "asdf", "msa", version.version_type().as_str(), width, height, "placeholder", "placeholder", "placeholder", "placeholder"];
     let ac = AhoCorasick::new(PLACEHOLDERS).unwrap();
     let formatted = ac.replace_all(unformatted.as_str(), &replace);
     formatted
