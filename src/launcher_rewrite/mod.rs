@@ -40,8 +40,10 @@ pub fn launch_game(profile_id: u128) {
             if need_to_install {
                 // Download vanilla json
                 version_info.download(version_info.id());
-                // Download modded version json
-
+                // Download modded version json if needed
+                if let Some(manifest) = profile.mod_loader().get_manifest() {
+                    manifest.get_loader_version_info(profile.version_name(), profile.mod_loader_version()).download(profile.version_name())
+                }
             }
 
             // TODO handle installing modded versions
