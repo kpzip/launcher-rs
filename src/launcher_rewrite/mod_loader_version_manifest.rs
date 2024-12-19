@@ -1,8 +1,14 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::num::NonZeroU64;
+use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, Mutex, OnceLock};
+use iced::widget::markdown::Url;
 use crate::launcher_rewrite::fabric;
+use crate::launcher_rewrite::installer::Downloadable;
+use crate::launcher_rewrite::path_handler::get_vanilla_client_json_path;
 use crate::launcher_rewrite::profiles::ModLoader;
+use crate::launcher_rewrite::util::hash::FileHash;
 
 pub static FABRIC_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Fabric, fabric::get_compatible_versions));
 pub static QUILT_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(Default::default);
@@ -43,27 +49,38 @@ impl ModLoaderVersionManifest {
         }
     }
 
-    pub fn sanitize_loader_version_name<'a>(&'a self, game_version_name: &str, loader_version_name: &'a str) -> &'a str {
+    pub fn sanitize_loader_version_name<'a>(&'a self, game_version_name: &str, loader_version_name: &'a str) -> Cow<'a, str> {
         match loader_version_name {
             "latest-stable" => {
                 if let Some(v) = self.get_loader_versions(game_version_name).iter().find(|v| v.is_stable()) {
-                    v.version_name.as_str()
+                    v.version_name.clone().into()
                 }
                 else {
-                    panic!("No stable loader version found for loader {:?} for game version {}.", self.loader, game_version_name);
+                    panic!("No stable loader version found for loader `{:?}` for game version `{}`.", self.loader, game_version_name);
                 }
             },
             "latest-beta" => {
                 if let Some(v) = self.get_loader_versions(game_version_name).get(0) {
-                    v.version_name.as_str()
+                    v.version_name.clone().into()
                 }
                 else {
-                    panic!("No loader version found for loader {:?} for game version {}.", self.loader, game_version_name);
+                    panic!("No loader version found for loader `{:?}` for game version `{}`.", self.loader, game_version_name);
                 }
             }
             n => {
-                n
+                n.into()
             }
+        }
+    }
+
+    // TODO find a way to do this without cloning?
+    pub fn get_loader_version_info(&self, game_version: &str, loader_version: &str) -> ModLoaderVersionInfo {
+        let loader_version = self.sanitize_loader_version_name(game_version, loader_version);
+        if let Some(ver) = self.get_loader_versions(game_version).iter().find(|v| v.version_name == loader_version) {
+            ver.clone()
+        }
+        else {
+            panic!("Unable to find loader version `{}` for mod loader `{:?}` and game version `{}`", loader_version, self.loader, game_version)
         }
     }
 
@@ -72,11 +89,24 @@ impl ModLoaderVersionManifest {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct ModLoaderVersionInfo {
     version_name: String,
     version_type: ModLoaderVersionType,
-    version_client_url: String,
+    version_client_url: Url,
+    // Annoying that we have to store this
+    loader: ModLoader,
+}
+
+impl Default for ModLoaderVersionInfo {
+    fn default() -> Self {
+        Self {
+            version_name: Default::default(),
+            version_type: Default::default(),
+            version_client_url: Url::parse("about:blank").expect("Invalid default url"),
+            loader: Default::default(),
+        }
+    }
 }
 
 impl ModLoaderVersionInfo {
@@ -93,12 +123,30 @@ impl ModLoaderVersionInfo {
         self.version_type
     }
 
-    pub fn version_client_url(&self) -> &str {
+    pub fn version_client_url(&self) -> &Url {
         &self.version_client_url
     }
 
-    pub fn new(version_name: String, version_type: ModLoaderVersionType, version_client_url: String) -> Self {
-        Self { version_name, version_type, version_client_url }
+    pub fn new(version_name: String, version_type: ModLoaderVersionType, version_client_url: Url, loader: ModLoader) -> Self {
+        Self { version_name, version_type, version_client_url, loader }
+    }
+}
+
+impl Downloadable for ModLoaderVersionInfo {
+    fn get_download_url(&self) -> &Url {
+        &self.version_client_url
+    }
+
+    fn get_file_path(&self, version_name: &str) -> PathBuf {
+        get_vanilla_client_json_path(version_name, self.loader, self.version_name.as_str())
+    }
+
+    fn get_hash(&self) -> Option<FileHash> {
+        None
+    }
+
+    fn get_size(&self) -> Option<NonZeroU64> {
+        None
     }
 }
 
