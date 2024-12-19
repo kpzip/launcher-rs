@@ -337,8 +337,8 @@ impl<'file> ValueType<'file> {
 
     pub fn into_vec(self) -> Vec<String> {
         match self {
-            ValueType::Single(s) => { vec![s.into()] }
-            ValueType::Multiple(v) => { v }
+            ValueType::Single(s) => { vec![s.to_owned().replace(' ', "")] }
+            ValueType::Multiple(v) => { v.into_iter().map(|s| s.replace(' ', "")).collect() }
         }
     }
 }
