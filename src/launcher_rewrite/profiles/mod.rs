@@ -237,7 +237,7 @@ pub fn fabric_version() -> String {
 
 impl ModLoader {
 
-    pub fn get_manifest(&self) -> Option<&ModLoaderVersionManifest> {
+    pub fn get_manifest(self) -> Option<&'static ModLoaderVersionManifest> {
         match self {
             ModLoader::Vanilla => None,
             ModLoader::Fabric => Some(&FABRIC_MANIFEST),
