@@ -5,6 +5,7 @@ use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 use std::str::FromStr;
 use std::sync::LazyLock;
 use const_format::concatcp;
+use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
 use crate::launcher_rewrite::profiles::ModLoader;
 
 #[cfg(debug_assertions)]
@@ -75,11 +76,14 @@ pub fn get_assets_root() -> PathBuf {
     from_launcher_dir([ASSETS_FOLDER])
 }
 
-pub fn get_vanilla_client_json_path(version_name: &str, mod_loader: ModLoader, mut loader_version: &str) -> PathBuf {
-    if let Some(manifest) = mod_loader.get_manifest() {
-        loader_version = manifest.sanitize_loader_version_name(version_name)
+pub fn get_vanilla_client_json_path(game_version: &str, mod_loader: ModLoader, loader_version: &str) -> PathBuf {
+    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
+    let mut cow_loader_version: Cow<str> = loader_version.into();
+    let possible_manifest = mod_loader.get_manifest();
+    if let Some(manifest) = possible_manifest {
+        cow_loader_version = manifest.sanitize_loader_version_name(game_version, loader_version)
     }
-    from_launcher_dir([VERSIONS_FOLDER, version_name, client_json_name(mod_loader, loader_version).as_ref()])
+    from_launcher_dir([VERSIONS_FOLDER, game_version, client_json_name(mod_loader, cow_loader_version.as_ref()).as_ref()])
 }
 
 pub fn get_assets_index_dir(index_name: &str) -> PathBuf {
