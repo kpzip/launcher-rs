@@ -92,9 +92,9 @@ fn get_jvm_args(version: &Version, resolution: Option<(u32, u32)>) -> String {
     let quick_play_realms = false;
     let owns_game = true;
 
-    let natives_dir = get_bin_path(version.id());
+    let natives_dir = get_bin_path(version.game_version());
     let classpath = get_classpath(version);
-    let log_config_file_path = version.log_info().get_file_path(version.id());
+    let log_config_file_path = version.log_info().get_file_path(version.game_version());
 
     let unformatted: String = version.arguments().jvm_args().iter().filter(|a| a.matches(!owns_game, has_custom_resolution, quick_play, quick_play_singleplayer, quick_play_multiplayer, quick_play_realms)).map(|a| a.values()).flatten().map(|s| s.as_str()).intersperse(" ").collect();
     const PLACEHOLDERS: &[&str] = &["${natives_directory}", "${launcher_name}", "${launcher_version}", "${classpath}", "${logging_path}"];
