@@ -11,6 +11,9 @@ pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARG
 
 pub static DEFAULT_DOWNLOADER_CLIENT: LazyLock<Client> = LazyLock::new(init_client);
 
+pub const ACCEPT_HEADER_NAME: &str = "Accept";
+pub const APPLICATION_JSON: &str = "application/json";
+
 fn init_client() -> Client {
     Client::builder().user_agent(APP_USER_AGENT).redirect(redirect::Policy::limited(10)).build().expect("Failed to start web client")
 }
