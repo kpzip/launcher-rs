@@ -18,6 +18,8 @@ pub static DEV_GAME_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from_str(
 
 pub const PATH_SEP: &'static str = MAIN_SEPARATOR_STR;
 
+pub const TMP_DIR: &'static str = "temp";
+
 pub const VERSIONS_FOLDER: &'static str = "versions";
 pub const ASSETS_FOLDER: &'static str = "assets";
 pub const INDEXES_FOLDER: &'static str = concatcp!(ASSETS_FOLDER, PATH_SEP, "indexes");
@@ -70,6 +72,10 @@ where
         buf.push(p.as_ref());
     });
     buf.into()
+}
+
+pub fn temp_file_path(filename: &str) -> PathBuf {
+    from_launcher_dir([TMP_DIR, filename])
 }
 
 pub fn get_assets_root() -> PathBuf {
