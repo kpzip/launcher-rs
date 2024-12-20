@@ -22,6 +22,7 @@ use std::path::PathBuf;
 use std::slice::Iter;
 use std::str::FromStr;
 use std::{fs, vec};
+use regex::Regex;
 
 #[derive(Debug, Clone)]
 pub struct Version {
@@ -348,7 +349,7 @@ impl Argument {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Rule {
     action: RuleAction,
     condition: Option<RuleCondition>,
@@ -363,9 +364,10 @@ impl Rule {
         }
         for (k, v) in value.os {
             condition = Some(match k {
-                "name" => RuleCondition::Os(Os::from_str(v).ok_or(Error::invalid_value(Unexpected::Str(v), &"`windows`, `osx`, or `linux`"))?),
-                "arch" => RuleCondition::Arch(Architecture::from_str(v).ok_or(Error::invalid_value(Unexpected::Str(v), &"`x86`, `x64`, or `arm64`"))?),
-                unknown => return Err(Error::unknown_field(unknown, &["name", "arch"])),
+                "name" => RuleCondition::Os(Os::from_str(v.as_str()).ok_or(Error::invalid_value(Unexpected::Str(v.as_str()), &"`windows`, `osx`, or `linux`"))?),
+                "arch" => RuleCondition::Arch(Architecture::from_str(v.as_str()).ok_or(Error::invalid_value(Unexpected::Str(v.as_str()), &"`x86`, `x64`, or `arm64`"))?),
+                "version" => RuleCondition::OsVersion(Regex::new(v.as_str()).map_err(Error::custom)?),
+                unknown => return Err(Error::unknown_field(unknown, &["name", "arch", "version"])),
             });
             break;
         }
@@ -384,12 +386,12 @@ impl Rule {
         Ok(Self { action, condition })
     }
 
-    pub fn matches(self, is_demo_user: bool, has_custom_resolution: bool, has_quick_play_support: bool, has_quick_play_singleplayer: bool, has_quick_play_multiplayer: bool, has_quick_play_realms: bool) -> bool {
+    pub fn matches(&self, is_demo_user: bool, has_custom_resolution: bool, has_quick_play_support: bool, has_quick_play_singleplayer: bool, has_quick_play_multiplayer: bool, has_quick_play_realms: bool) -> bool {
         let modifier = match self.action {
             RuleAction::Allow => false,
             RuleAction::Disallow => true,
         };
-        modifier ^ self.condition.map(|c| c.matches(is_demo_user, has_custom_resolution, has_quick_play_support, has_quick_play_singleplayer, has_quick_play_multiplayer, has_quick_play_realms)).unwrap_or(true)
+        modifier ^ self.condition.as_ref().map(|c| c.matches(is_demo_user, has_custom_resolution, has_quick_play_support, has_quick_play_singleplayer, has_quick_play_multiplayer, has_quick_play_realms)).unwrap_or(true)
     }
 }
 
@@ -399,7 +401,7 @@ impl Rule {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum RuleCondition {
     IsDemoUser(bool),
     HasCustomResolution(bool),
@@ -409,21 +411,40 @@ pub enum RuleCondition {
     IsQuickPlayRealms(bool),
     Arch(Architecture),
     Os(Os),
+    OsVersion(Regex),
 }
 
 impl RuleCondition {
-    pub fn matches(self, is_demo_user: bool, has_custom_resolution: bool, has_quick_play_support: bool, has_quick_play_singleplayer: bool, has_quick_play_multiplayer: bool, has_quick_play_realms: bool) -> bool {
+    pub fn matches(&self, is_demo_user: bool, has_custom_resolution: bool, has_quick_play_support: bool, has_quick_play_singleplayer: bool, has_quick_play_multiplayer: bool, has_quick_play_realms: bool) -> bool {
         match self {
-            RuleCondition::IsDemoUser(b) => b == is_demo_user,
-            RuleCondition::HasCustomResolution(b) => b == has_custom_resolution,
-            RuleCondition::HasQuickPlaySupport(b) => b == has_quick_play_support,
-            RuleCondition::IsQuickPlaySingleplayer(b) => b == has_quick_play_singleplayer,
-            RuleCondition::IsQuickPlayMultiplayer(b) => b == has_quick_play_multiplayer,
-            RuleCondition::IsQuickPlayRealms(b) => b == has_quick_play_realms,
-            RuleCondition::Arch(a) => a == Architecture::current(),
-            RuleCondition::Os(os) => os == Os::current(),
+            RuleCondition::IsDemoUser(b) => *b == is_demo_user,
+            RuleCondition::HasCustomResolution(b) => *b == has_custom_resolution,
+            RuleCondition::HasQuickPlaySupport(b) => *b == has_quick_play_support,
+            RuleCondition::IsQuickPlaySingleplayer(b) => *b == has_quick_play_singleplayer,
+            RuleCondition::IsQuickPlayMultiplayer(b) => *b == has_quick_play_multiplayer,
+            RuleCondition::IsQuickPlayRealms(b) => *b == has_quick_play_realms,
+            RuleCondition::Arch(a) => *a == Architecture::current(),
+            RuleCondition::Os(os) => *os == Os::current(),
+            RuleCondition::OsVersion(regex) => if let Some(ver) = get_os_version() { regex.is_match(ver.as_str()) } else { true },
         }
     }
+}
+
+fn get_os_version() -> Option<String> {
+    let version =  match os_version::detect() {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("Error getting os version!: {}", e);
+            return None
+        },
+    };
+    match version {
+        os_version::OsVersion::Linux(lv) => lv.version_name,
+        os_version::OsVersion::MacOS(mv) => Some(mv.version),
+        os_version::OsVersion::Windows(wv) => Some(wv.version),
+        _ => None
+    }
+
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

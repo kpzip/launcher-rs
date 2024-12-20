@@ -36,9 +36,9 @@ pub (in crate::launcher_rewrite::launch_properties) struct ClientJson<'file> {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub (in crate::launcher_rewrite::launch_properties) struct Arguments<'file> {
-    #[serde(borrow)]
+    #[serde(borrow, default)]
     pub game: Vec<Arg<'file>>,
-    #[serde(borrow)]
+    #[serde(borrow, default)]
     pub jvm: Vec<Arg<'file>>,
 }
 
@@ -88,11 +88,11 @@ pub (in crate::launcher_rewrite::launch_properties) struct MainDownloads<'file> 
     #[serde(borrow)]
     pub client: DownloadInfo<'file>,
     #[serde(borrow)]
-    pub client_mappings: DownloadInfo<'file>,
+    pub client_mappings: Option<DownloadInfo<'file>>,
     #[serde(borrow)]
     pub server: DownloadInfo<'file>,
     #[serde(borrow)]
-    pub server_mappings: DownloadInfo<'file>,
+    pub server_mappings: Option<DownloadInfo<'file>>,
 }
 
 impl<'file> MainDownloads<'file> {
@@ -100,16 +100,16 @@ impl<'file> MainDownloads<'file> {
         &self.client
     }
 
-    pub fn client_mappings(&self) -> &DownloadInfo {
-        &self.client_mappings
+    pub fn client_mappings(&self) -> Option<&DownloadInfo> {
+        self.client_mappings.as_ref()
     }
 
     pub fn server(&self) -> &DownloadInfo {
         &self.server
     }
 
-    pub fn server_mappings(&self) -> &DownloadInfo {
-        &self.server_mappings
+    pub fn server_mappings(&self) -> Option<&DownloadInfo> {
+        self.server_mappings.as_ref()
     }
 }
 
@@ -208,7 +208,7 @@ pub (in crate::launcher_rewrite::launch_properties) struct Rule<'file> {
     pub features: HashMap<&'file str, bool>,
     #[serde(borrow)]
     #[serde(default)]
-    pub os: HashMap<&'file str, &'file str>,
+    pub os: HashMap<&'file str, String>,
     //#[serde(default)]
     //#[serde(borrow)]
     //pub os: Option<OsMatcher<'file>>,
