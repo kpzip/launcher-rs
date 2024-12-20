@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, io};
 use std::fs::File;
 use std::num::NonZeroU64;
 use std::path::PathBuf;
@@ -24,7 +24,7 @@ pub trait Downloadable {
 
     // fn get_download_url_in_place(&self, out: &mut Url);
 
-    fn get_file_path(&self, version_name: &str) -> PathBuf;
+    fn get_file_path(&self, game_version: &str) -> PathBuf;
 
     // fn get_file_path_in_place(&self, out: &mut PathBuf);
 
@@ -32,17 +32,27 @@ pub trait Downloadable {
 
     fn get_size(&self) -> Option<NonZeroU64>;
 
+    fn requires_custom_download_fn(&self) -> bool {
+        false
+    }
+
+    fn custom_download_fn(&self, _game_version: &str) {}
+
     // For convenience
-    fn download(&self, version_name: &str) where Self: Sized {
-        download(self, version_name);
+    fn download(&self, game_version: &str) where Self: Sized {
+        download(self, game_version);
     }
 
 }
 
 
 // TODO Error Handling + Client and reduce allocations
-pub fn download<D: Downloadable>(download: &D, version_name: &str) {
-    let path = download.get_file_path(version_name);
+pub fn download<D: Downloadable>(download: &D, game_version: &str) {
+    if download.requires_custom_download_fn() {
+        download.custom_download_fn(game_version);
+        return;
+    }
+    let path = download.get_file_path(game_version);
     if let Ok(file) = File::open(&path) {
         if let Some(hash) = download.get_hash() {
             if sha1_matches(file, hash.as_slice()) {
@@ -51,10 +61,12 @@ pub fn download<D: Downloadable>(download: &D, version_name: &str) {
         }
     }
     // TODO find a good way to have the url be moved by the `Downloadable` Trait but also have urls be verified at deserialize time
-    let file = DEFAULT_DOWNLOADER_CLIENT.get(Url::clone(download.get_download_url())).send().unwrap().bytes().unwrap();
+    // TODO use std::io::copy instead of reading the whole buffer and then writing it
+    let mut file = DEFAULT_DOWNLOADER_CLIENT.get(Url::clone(download.get_download_url())).send().unwrap();
     //println!("Path: {:?}", &path);
     let dir = path.parent().unwrap();
     //println!("Path: {:?}", dir);
     fs::create_dir_all(dir).unwrap();
-    fs::write(&path, file).unwrap();
+    let mut write_file = File::create(&path).unwrap();
+    io::copy(&mut file, &mut write_file).expect("Failed to copy data");
 }
