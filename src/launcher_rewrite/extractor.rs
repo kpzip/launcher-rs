@@ -28,7 +28,7 @@ pub fn extract_if_needed(extracted_path: &Path, internal_path: &Path, jar_path: 
             return;
         }
     };
-    let mut write_file = fs::File::open(extracted_path).unwrap();
+    let mut write_file = fs::File::create(extracted_path).unwrap();
     io::copy(&mut internal_file, &mut write_file).expect("TODO: panic message");
 }
 
