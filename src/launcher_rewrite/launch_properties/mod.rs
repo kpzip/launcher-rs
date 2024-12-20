@@ -9,7 +9,7 @@ use crate::launcher_rewrite::profiles::ModLoader;
 use crate::launcher_rewrite::util::hash;
 use crate::launcher_rewrite::util::hash::{sha1_from_base64_str, FileHash};
 use crate::launcher_rewrite::version_type::VersionType;
-use crate::util::flip_result_option;
+use crate::util::{flip_result_option, unpack_option};
 use chrono::{DateTime, Utc};
 use reqwest::Url;
 use serde::de::{Error, MapAccess, Unexpected, Visitor};
@@ -158,7 +158,7 @@ impl<'de> Deserialize<'de> for Version {
         let assets = first_or_second_or_missing(unpack_assets_index(json.asset_index)?, inherited.as_ref(), |j| unpack_assets_index(j.asset_index), "assetIndex")?;
 
         let log_info = first_or_second_or_missing(unpack_log_config(json.logging)?, inherited.as_ref(), |j| unpack_log_config(j.logging), "logging")?;
-        let log_arg = first_or_second_or_missing(json.logging, inherited.as_ref(), |j| Ok(j.logging), "logging")?.argument.replace("${path}", "${logging_path}");
+        let log_arg = first_or_second_or_missing(unpack_option(json.logging, |l| l.client), inherited.as_ref(), |j| Ok(unpack_option(json.logging, |l| l.client)), "logging")?.argument.replace("${path}", "${logging_path}");
         jvm_args.push(Argument::without_rules(vec![log_arg]));
 
         if let Some(inherit) = inherited {
@@ -249,7 +249,14 @@ fn map_library<E: Error>(lib: internal::Library) -> Result<Option<LibraryInfo>, 
     let group_id_url = group_id.replace('.', "/");
 
     let url = match lib.format {
-        LibraryFormat::Artifact { ref downloads } => Url::parse(downloads.artifact.info.url).map_err(E::custom)?,
+        LibraryFormat::Artifact { ref downloads } => match downloads.artifact.info.url {
+            "" => {
+                Url::parse("about:blank").map_err(E::custom)?
+            },
+            url => {
+                Url::parse(url).map_err(E::custom)?
+            },
+        },
         LibraryFormat::Plain { ref info } => Url::parse(format!("{}{}/{}/{}/{}-{}.jar", info.url, group_id_url.as_str(), artifact_id, version, artifact_id, version).as_str()).map_err(E::custom)?,
     };
     let name = match lib.format {
@@ -293,15 +300,22 @@ fn unpack_assets_index<E: Error>(info: Option<internal::AssetIndexInfo>) -> Resu
 fn unpack_log_config<E: Error>(info: Option<internal::LoggingInfo>) -> Result<Option<LogConfigInfo>, E> {
     match info {
         None => Ok(None),
-        Some(l) => Ok(Some(LogConfigInfo::new(
-            String::from(l.file.id),
-            match l.file.sha1 {
-                None => None,
-                Some(hash_str) => Some(FileHash::Sha1(sha1_from_base64_str(hash_str)?)),
-            },
-            l.file.size,
-            Url::parse(l.file.url).map_err(|e| Error::custom(e))?,
-        ))),
+        Some(l) => {
+            if let Some(client) = l.client {
+                Ok(Some(LogConfigInfo::new(
+
+                String::from(client.file.id),
+                match client.file.sha1 {
+                    None => None,
+                    Some(hash_str) => Some(FileHash::Sha1(sha1_from_base64_str(hash_str)?)),
+                },
+                client.file.size,
+            Url::parse(client.file.url).map_err(|e| Error::custom(e))?,
+                )))
+            } else {
+                Ok(None)
+            }
+        },
     }
 }
 
