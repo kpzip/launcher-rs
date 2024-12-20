@@ -345,16 +345,8 @@ impl<'file> ValueType<'file> {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub (in crate::launcher_rewrite::launch_properties) struct LoggingInfo<'file> {
-    #[serde(borrow)]
-    pub client: ClientLoggingInfo<'file>,
-}
-
-impl<'file> Deref for LoggingInfo<'file> {
-    type Target = ClientLoggingInfo<'file>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.client
-    }
+    #[serde(borrow, default)]
+    pub client: Option<ClientLoggingInfo<'file>>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
