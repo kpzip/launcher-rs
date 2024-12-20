@@ -1,6 +1,13 @@
 use std::borrow::Borrow;
 use std::path::{Path, PathBuf};
 
+pub fn unpack_option<T, S, F>(double: Option<S>, func: F) -> Option<T>
+where
+    F: Fn(S) -> Option<T>
+{
+    func(double?)
+}
+
 pub fn ref_comparison<T>(lhs: &T, rhs: &T) -> bool {
     lhs as *const T == rhs as *const T
 }
