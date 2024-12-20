@@ -148,6 +148,30 @@ impl Downloadable for ModLoaderVersionInfo {
     fn get_size(&self) -> Option<NonZeroU64> {
         None
     }
+
+    fn requires_custom_download_fn(&self) -> bool {
+        match self.loader {
+            ModLoader::Vanilla => false,
+            ModLoader::Fabric => false,
+            ModLoader::Quilt => false,
+            ModLoader::Forge => true,
+            ModLoader::NeoForge => true,
+        }
+    }
+
+    fn custom_download_fn(&self, game_version: &str) {
+        match self.loader {
+            ModLoader::Vanilla => unreachable!(),
+            ModLoader::Fabric => unreachable!(),
+            ModLoader::Quilt => unreachable!(),
+            ModLoader::Forge => {
+                forge::installer::download(&self, game_version);
+            }
+            ModLoader::NeoForge => {
+                todo!()
+            }
+        }
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
