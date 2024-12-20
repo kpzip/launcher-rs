@@ -4,15 +4,15 @@ use std::num::NonZeroU64;
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 use iced::widget::markdown::Url;
-use crate::launcher_rewrite::fabric;
+use crate::launcher_rewrite::{fabric, forge, quilt};
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::path_handler::get_vanilla_client_json_path;
 use crate::launcher_rewrite::profiles::ModLoader;
 use crate::launcher_rewrite::util::hash::FileHash;
 
 pub static FABRIC_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Fabric, fabric::get_compatible_versions));
-pub static QUILT_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(Default::default);
-pub static FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(Default::default);
+pub static QUILT_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Quilt, quilt::get_compatible_versions));
+pub static FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Forge, forge::get_compatible_versions));
 pub static NEO_FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(Default::default);
 
 #[derive(Debug, Default, Clone)]
