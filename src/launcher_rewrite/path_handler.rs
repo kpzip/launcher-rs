@@ -19,6 +19,8 @@ pub static DEV_GAME_DIR: LazyLock<PathBuf> = LazyLock::new(|| PathBuf::from_str(
 pub const PATH_SEP: &'static str = MAIN_SEPARATOR_STR;
 
 pub const TMP_DIR: &'static str = "temp";
+pub const DUMMY_INSTALL_DIR_NAME: &'static str = "install";
+pub const DUMMY_LAUNCHER_PROFILES_JSON_NAME: &'static str = "launcher_profiles.json";
 
 pub const VERSIONS_FOLDER: &'static str = "versions";
 pub const ASSETS_FOLDER: &'static str = "assets";
