@@ -1,9 +1,12 @@
 # TODO
 
 - [ ] Old version support
-- [ ] Forge/NeoForge support
+- [x] Forge support
+- [ ] Neo Forge support
 - [ ] Save profile changes dialog
 - [ ] Panic dialog
+- [ ] Better Error Handling when launching
+- [ ] 2FA support
 - [ ] auto detect missing files
 - [ ] cache and lazily update manifests
 - [ ] installer
