@@ -20,7 +20,6 @@ pub mod gui;
 mod threading;
 pub mod util;
 mod launcher_rewrite;
-
 // Global State
 //pub static INSTALLED_VERSION_INFO: LazyLock<Mutex<HashMap<(String, ModLoader), (AssetIndex, LaunchProperties)>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 //pub static PROFILES: Mutex<Option<LauncherProfiles>> = Mutex::new(None);
