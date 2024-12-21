@@ -13,7 +13,8 @@ pub struct ClassFile {
     members: HashMap<String, String>,
 }
 
-
+// TODO
+/*
 pub fn from_map_file(file_path: &Path) -> ObfuscationMap {
     let file = File::open(file_path).expect("Failed to open File.");
     let mut lines = BufReader::new(file).lines().flatten();
@@ -30,4 +31,4 @@ pub fn from_map_file(file_path: &Path) -> ObfuscationMap {
         }
     }
 
-}
+}*/
