@@ -1,7 +1,7 @@
 mod internal;
 
 use crate::launcher_rewrite::assets::AssetsIndex;
-use crate::launcher_rewrite::extractor::extract_dlls_from_jar;
+use crate::launcher_rewrite::jar_utils::extractor::extract_dlls_from_jar;
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::launch_properties::internal::{Arg, AssetIndexInfo, ClientJson, LibraryFormat, LoggingInfo, RuleAction};
 use crate::launcher_rewrite::path_handler::{get_assets_index_dir, get_bin_path, get_log_configs_folder, get_vanilla_client_json_path, BIN_PATH};
@@ -158,7 +158,7 @@ impl<'de> Deserialize<'de> for Version {
         let assets = first_or_second_or_missing(unpack_assets_index(json.asset_index)?, inherited.as_ref(), |j| unpack_assets_index(j.asset_index), "assetIndex")?;
 
         let log_info = first_or_second_or_missing(unpack_log_config(json.logging)?, inherited.as_ref(), |j| unpack_log_config(j.logging), "logging")?;
-        let log_arg = first_or_second_or_missing(unpack_option(json.logging, |l| l.client), inherited.as_ref(), |j| Ok(unpack_option(json.logging, |l| l.client)), "logging")?.argument.replace("${path}", "${logging_path}");
+        let log_arg = first_or_second_or_missing(unpack_option(json.logging, |l| l.client), inherited.as_ref(), |j| Ok(unpack_option(j.logging, |l| l.client)), "logging")?.argument.replace("${path}", "${logging_path}");
         jvm_args.push(Argument::without_rules(vec![log_arg]));
 
         if let Some(inherit) = inherited {
