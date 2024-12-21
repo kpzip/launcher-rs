@@ -62,7 +62,11 @@ pub fn download<D: Downloadable>(download: &D, game_version: &str) {
     }
     // TODO find a good way to have the url be moved by the `Downloadable` Trait but also have urls be verified at deserialize time
     // TODO use std::io::copy instead of reading the whole buffer and then writing it
-    let mut file = DEFAULT_DOWNLOADER_CLIENT.get(Url::clone(download.get_download_url())).send().unwrap();
+    let url = download.get_download_url();
+    if url.scheme() == "about" && url.path() == "blank" {
+        return;
+    }
+    let mut file = DEFAULT_DOWNLOADER_CLIENT.get(url.clone()).send().unwrap();
     //println!("Path: {:?}", &path);
     let dir = path.parent().unwrap();
     //println!("Path: {:?}", dir);
