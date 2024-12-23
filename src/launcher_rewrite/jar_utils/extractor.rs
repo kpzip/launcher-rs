@@ -20,11 +20,11 @@ pub fn extract_if_needed(extracted_path: &Path, internal_path: &Path, jar_path: 
     let jarfile = fs::File::open(jar_path).unwrap();
     let mut archive = zip::ZipArchive::new(jarfile).unwrap();
     let internal_name = internal_path.as_os_str().to_str().unwrap();
-    println!("Extracting: {}", internal_name);
+    // println!("Extracting: {}", internal_name);
     let mut internal_file = match archive.by_name(internal_name) {
         Ok(s) => s,
         Err(e) => {
-            println!("Could not open internal file {}, because of the error: {}", internal_name, e);
+            eprintln!("Could not open internal file {}, because of the error: {}", internal_name, e);
             return;
         }
     };
@@ -33,7 +33,7 @@ pub fn extract_if_needed(extracted_path: &Path, internal_path: &Path, jar_path: 
 }
 
 pub fn extract_dlls_from_jar(bin_path: &Path, jar_path: &Path) {
-    println!("Jar Path: {}", jar_path.display());
+    // println!("Jar Path: {}", jar_path.display());
     let jar_file = fs::File::open(jar_path).unwrap();
     let mut archive = zip::ZipArchive::new(jar_file).unwrap();
     let mut extracted_file_path: PathBuf = bin_path.into();
