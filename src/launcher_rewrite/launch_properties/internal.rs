@@ -28,7 +28,10 @@ pub (in crate::launcher_rewrite::launch_properties) struct ClientJson<'file> {
     pub logging: Option<LoggingInfo<'file>>,
     pub main_class: Option<&'file str>,
     pub minimum_launcher_version: Option<u8>,
+    // TODO neo forge likes to use incorrect RFC 3339 format, so find a way around this while not skipping date fields
+    #[serde(skip, default)]
     pub release_time: DateTime<Utc>,
+    #[serde(skip, default)]
     pub time: DateTime<Utc>,
     #[serde(rename = "type")]
     pub release_type: Option<VersionType>,
