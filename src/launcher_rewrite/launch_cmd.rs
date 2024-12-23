@@ -3,7 +3,9 @@ use std::path::Path;
 use std::process::{Child, Command};
 use std::sync::atomic::Ordering;
 use std::{fs, thread};
+use std::sync::LazyLock;
 use aho_corasick::AhoCorasick;
+use regex::Regex;
 use crate::gui::game_output::open_game_output_window;
 use crate::launcher_rewrite::GAME_INSTANCE_COUNT;
 use crate::launcher_rewrite::installer::Downloadable;
@@ -14,6 +16,9 @@ use crate::launcher_rewrite::path_handler::{DEV_GAME_DIR, get_assets_root, get_b
 pub const CLASSPATH_SEPARATOR: char = ';';
 #[cfg(not(target_os = "windows"))]
 pub const CLASSPATH_SEPARATOR: char = ':';
+
+static MODULE_PATH_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"( -p .+? )|( --module-path .+? )"#).expect("Failed to compile regex!"));
+static MODULE_PATH_JAR_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"[\\/][^\\/]+?\.jar"#).expect("Failed to compile regex!"));
 
 impl Version {
 
@@ -48,7 +53,7 @@ fn get_classpath(version: &Version) -> String {
     if classpath.ends_with(CLASSPATH_SEPARATOR) {
         classpath.pop();
     }
-    println!("Classpath: {}", classpath);
+    // println!("Classpath: {}", classpath);
     classpath
 }
 
@@ -97,11 +102,36 @@ fn get_jvm_args(version: &Version, resolution: Option<(u32, u32)>) -> String {
     let log_config_file_path = version.log_info().get_file_path(version.game_version());
 
     let unformatted: String = version.arguments().jvm_args().iter().filter(|a| a.matches(!owns_game, has_custom_resolution, quick_play, quick_play_singleplayer, quick_play_multiplayer, quick_play_realms)).map(|a| a.values()).flatten().map(|s| s.as_str()).intersperse(" ").collect();
-    const PLACEHOLDERS: &[&str] = &["${natives_directory}", "${launcher_name}", "${launcher_version}", "${classpath}", "${logging_path}"];
+    const PLACEHOLDERS: &[&str] = &["${natives_directory}", "${launcher_name}", "${launcher_version}", "${classpath}", "${logging_path}", "${version_name}", "${classpath_separator}", "${library_directory}"];
     let binding = natives_dir.to_string_lossy();
     let binding2 = log_config_file_path.to_string_lossy();
-    let replace = [binding.as_ref(), env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), classpath.as_str(), binding2.as_ref()];
+    let bin_dir = get_bin_path(version.game_version());
+    let bin_dir_str = bin_dir.to_string_lossy();
+    let mut cp_separator_buf: [u8; 4] = [0; 4];
+    let classpath_separator: &str = CLASSPATH_SEPARATOR.encode_utf8(&mut cp_separator_buf);
+    let replace = [binding.as_ref(), env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), classpath.as_str(), binding2.as_ref(), version.game_version(), classpath_separator, bin_dir_str.as_ref()];
     let ac = AhoCorasick::new(PLACEHOLDERS).unwrap();
-    let formatted = ac.replace_all(unformatted.as_str(), &replace);
+    let mut formatted = ac.replace_all(unformatted.as_str(), &replace);
+
+    // Module path madness because neoforge devs have cacti up their asses
+    let module_path_indices = MODULE_PATH_REGEX.find(formatted.as_str());
+    if let Some(module_path_match) = module_path_indices {
+        let module_path_str = module_path_match.as_str();
+        let module_jars = MODULE_PATH_JAR_REGEX.find_iter(module_path_str);
+        let mut module_path = String::with_capacity(1024);
+        module_path.push_str(" -p ");
+        module_jars.for_each(|jar_name| {
+            module_path.push_str(bin_dir_str.as_ref());
+            module_path.push_str(jar_name.as_str());
+            module_path.push_str(classpath_separator);
+        });
+        // remove trailing `;` is this necessary?
+        if !module_path.is_empty() {
+            module_path.pop();
+            module_path.push(' ');
+        }
+        // TODO optimize
+        formatted = formatted.replace(module_path_str, module_path.as_str());
+    }
     formatted
 }
