@@ -50,19 +50,6 @@ pub fn launch_game(profile_id: u128) {
                 }
             }
 
-            // TODO handle installing modded versions
-            match profile.mod_loader() {
-                ModLoader::Vanilla => {}
-                ModLoader::Fabric => {
-
-                }
-                ModLoader::Quilt => {}
-                ModLoader::Forge => {
-
-                }
-                ModLoader::NeoForge => {}
-            }
-
 
             // TODO Error Handling
             let json_path = get_vanilla_client_json_path(version_info.id(), profile.mod_loader(), profile.mod_loader_version());
