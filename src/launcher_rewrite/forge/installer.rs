@@ -5,7 +5,7 @@ use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use const_format::concatcp;
-use iced::widget::markdown::Url;
+use reqwest::Url;
 use crate::launcher_rewrite::jar_utils::extractor::extract_if_needed;
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
