@@ -13,3 +13,4 @@
 - [ ] basic server support
 - [ ] UI improvements
 - [ ] JVM bundling
+- [ ] Testing
