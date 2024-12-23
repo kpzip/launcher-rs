@@ -168,7 +168,7 @@ impl Downloadable for ModLoaderVersionInfo {
                 forge::installer::download(&self, game_version);
             }
             ModLoader::NeoForge => {
-                todo!()
+                neo_forge::installer::download(&self, game_version);
             }
         }
     }
