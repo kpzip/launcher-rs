@@ -29,6 +29,7 @@ mod forge;
 mod jar_utils;
 mod neo_forge;
 mod game_version;
+mod error;
 
 // Number of game instances open. Know this so that way we can refrain from exiting the launcher process until all game instances were closed by the user.
 pub static GAME_INSTANCE_COUNT: AtomicUsize = AtomicUsize::new(0);
