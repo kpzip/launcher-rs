@@ -28,11 +28,11 @@ impl ModLoaderVersionManifest {
     }
 
     pub fn has_loader_for_game_version(&self, game_version_name: &str) -> bool {
-        self.versions_map.contains(game_version_name)
+        !self.get_loader_versions(game_version_name).is_empty()
     }
 
     pub fn has_stable_loader_version_for_game_version(&self, game_version_name: &str) -> bool {
-        self.versions_map.get(game_version_name).iter().filter(|loader_version| loader_version.is_stable()).next().is_some()
+        self.get_loader_versions(game_version_name).iter().filter(|loader_version| loader_version.is_stable()).next().is_some()
     }
 
     pub fn contains(&self, game_version_name: &str, loader_version_name: &str) -> bool {
