@@ -62,8 +62,8 @@ pub fn edit_installations_tab_content(profile: &LauncherProfile) -> Element<'sta
     }
 
     let picked = if loader_version_list.is_empty() { None } else { Some(profile.mod_loader_version().to_owned()) };
-    let mod_loader_version_picker = container(row![container(text("Loader Version: ")).center_y(Length::Fill).width(240), container(PickList::new(loader_version_list, picked, |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::LoaderVersionChanged(loader.to_owned()))).width(220)).center_y(Length::Fill).width(240),].height(40))
-        .center_x(Length::Fill);
+    let mod_loader_version_picker: Element<'static, LauncherMessage, LauncherTheme, LauncherRenderer> =  if profile.mod_loader() != ModLoader::Vanilla { container(row![container(text("Loader Version: ")).center_y(Length::Fill).width(240), container(PickList::new(loader_version_list, picked, |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::LoaderVersionChanged(loader.to_owned()))).width(220)).center_y(Length::Fill).width(240),].height(40))
+        .center_x(Length::Fill).into() } else { Space::new(0, 0).into() };
 
     let version_picker = container(
         row![
