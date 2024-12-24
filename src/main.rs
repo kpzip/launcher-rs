@@ -1,5 +1,7 @@
 #![feature(iter_intersperse)]
+#![feature(panic_payload_as_str)]
 
+use std::panic::set_hook;
 use crate::gui::{Flags, LauncherGui, LauncherMessage, MC_FONT};
 use crate::threading::WorkerThread;
 use iced::{Size, window};
@@ -10,6 +12,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
+use native_dialog::{MessageDialog, MessageType};
 use crate::launcher_rewrite::authentication::save_account_data;
 use crate::launcher_rewrite::GAME_INSTANCE_COUNT;
 use crate::launcher_rewrite::installed_versions::save_installed_versions;
@@ -34,6 +37,16 @@ pub static WORKER_THREAD_HANDLE: Mutex<Option<WorkerThread>> = Mutex::new(None);
 const MC_FONT_BYTES: &[u8] = include_bytes!("../assets/minecraft_font.ttf");
 
 fn main() {
+
+    set_hook(Box::new(|p| {
+        let mut panic_message_str = "";
+        let location_str = p.location().map(|loc| loc.to_string()).unwrap_or(String::new());
+        if let Some(pstr) = p.payload_as_str() {
+            panic_message_str = pstr;
+        }
+
+        let err_dialog = MessageDialog::new().set_type(MessageType::Error).set_title("Launcher Error").set_text(format!("Launcher panicked: {}\nPanic Location: {}", panic_message_str, location_str).as_str()).show_alert();
+    }));
 
     let (message_send, message_receive) = tokio::sync::mpsc::unbounded_channel::<LauncherMessage>();
 
