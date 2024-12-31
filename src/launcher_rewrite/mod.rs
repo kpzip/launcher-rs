@@ -30,7 +30,7 @@ mod forge;
 mod jar_utils;
 mod neo_forge;
 mod game_version;
-mod error;
+pub mod error;
 
 // Number of game instances open. Know this so that way we can refrain from exiting the launcher process until all game instances were closed by the user.
 pub static GAME_INSTANCE_COUNT: AtomicUsize = AtomicUsize::new(0);
@@ -58,7 +58,7 @@ pub fn launch_game(profile_id: u128) -> Result<(), LauncherError> {
             let version: Version = serde_json::from_str(client_file_contents.as_str())?;
 
             if need_to_install {
-                version.install();
+                version.install()?;
             }
 
             if need_to_install {
