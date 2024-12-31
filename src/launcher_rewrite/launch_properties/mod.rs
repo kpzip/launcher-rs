@@ -39,9 +39,6 @@ pub struct Version {
 }
 
 impl Version {
-    pub fn from_file() -> Self {
-        todo!()
-    }
 
     pub fn install(&self) -> Result<(), LauncherError> {
         let version_name = self.game_version.as_str();
@@ -53,7 +50,7 @@ impl Version {
         self.assets.download(version_name)?;
         let index_file = fs::read_to_string(self.assets.get_file_path(version_name)).unwrap();
         let assets_index: AssetsIndex = serde_json::from_str(index_file.as_str()).unwrap();
-        assets_index.download_all(version_name);
+        assets_index.download_all(version_name)?;
 
         // Log configs
         self.log_info.download(version_name)?;
