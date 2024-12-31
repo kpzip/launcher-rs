@@ -9,6 +9,7 @@ pub enum LauncherError {
     ClientDeserializeError,
     DownloadError,
     AccountError,
+    ProfileError,
 }
 
 impl Display for LauncherError {

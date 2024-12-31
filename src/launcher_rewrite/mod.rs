@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::sync::atomic::AtomicUsize;
 use crate::launcher_rewrite::authentication::LOGGED_IN_ACCOUNT_DATA;
+use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::installed_versions::INSTALLED_VERSIONS;
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::launch_properties::Version;
@@ -75,13 +76,15 @@ pub fn launch_game(profile_id: u128) -> Result<(), LauncherError> {
             let res = convert_width_height(width, height);
 
             version.launch(username, uuid, token, res, Path::new(profile.mc_directory()));
-            return Ok()
+            return Ok(());
         }
         else {
             eprintln!("Attempted to launch profile with illegal version name {}!", profile.version_name());
+            return Err(LauncherError::ProfileError);
         }
     }
     else {
         eprintln!("Attempted to launch nonexistent profile with id {}!", profile_id);
+        return Err(LauncherError::ProfileError);
     }
 }
