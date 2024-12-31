@@ -10,6 +10,7 @@ pub enum LauncherError {
     DeserializeError(serde_json::Error),
     FsError(io::Error),
     DownloadError(reqwest::Error),
+    ExtractError(zip::result::ZipError),
     AccountError,
     ProfileError,
 }
@@ -27,6 +28,7 @@ impl Error for LauncherError {
             DeserializeError(e) => Some(e),
             FsError(e) => Some(e),
             DownloadError(e) => Some(e),
+            ExtractError(e) => Some(e),
             AccountError | ProfileError => None,
         }
     }
@@ -48,5 +50,11 @@ impl From<reqwest::Error> for LauncherError {
 impl From<io::Error> for LauncherError {
     fn from(e: io::Error) -> Self {
         Self::FsError(e)
+    }
+}
+
+impl From<zip::result::ZipError> for LauncherError {
+    fn from(e: zip::result::ZipError) -> Self {
+        Self::ExtractError(e)
     }
 }
