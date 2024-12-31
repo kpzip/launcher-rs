@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter, Write};
 use std::io;
+use crate::launcher_rewrite::error::LauncherError::ProfileError;
 
 type LauncherResult<T> = Result<T, LauncherError>;
 
@@ -21,7 +22,13 @@ impl Display for LauncherError {
 
 impl Error for LauncherError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
-        todo!()
+        use LauncherError::*;
+        match self {
+            DeserializeError(e) => Some(e),
+            FsError(e) => Some(e),
+            DownloadError(e) => Some(e),
+            AccountError | ProfileError => None,
+        }
     }
     
 }
