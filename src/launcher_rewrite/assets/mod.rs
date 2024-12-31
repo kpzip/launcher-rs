@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use reqwest::Url;
 use serde::{Deserialize, Deserializer};
 use serde::de::Error;
+use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::path_handler::get_objects_dir;
 use crate::launcher_rewrite::util::hash::{FileHash, Sha1, sha1_from_base64_str};
@@ -17,8 +18,9 @@ pub struct AssetsIndex<'file> {
 }
 
 impl<'file> AssetsIndex<'file> {
-    pub fn download_all(&self, version_name: &str) {
-        self.objects.iter().for_each(|o| o.download(version_name));
+    pub fn download_all(&self, version_name: &str) -> Result<(), LauncherError> {
+        self.objects.iter().map(|o| o.download(version_name)).collect::<Result<Vec<()>, LauncherError>>()?;
+        Ok(())
     }
 }
 
