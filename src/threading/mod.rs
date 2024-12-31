@@ -17,6 +17,8 @@ use std::sync::{mpsc, Arc};
 use std::thread::JoinHandle;
 use std::{fs, thread};
 use tokio::sync::mpsc::UnboundedSender;
+use crate::gui::GuiMessage::JavaEditionInteraction;
+use crate::gui::je::JeGuiInteraction;
 use crate::launcher_rewrite::authentication::LOGGED_IN_ACCOUNT_DATA;
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::launch_game;
@@ -67,26 +69,15 @@ fn worker_thread(comms: Receiver<WorkerThreadTask>, message_send: UnboundedSende
             Ok(v) => {
                 match v {
                     WorkerThreadTask::LaunchGame(profile_id) => {
-                        launch_game(profile_id);
-
-
-
-                        /*
-                        let profile_lock = PROFILES.lock().unwrap();
-                        let profiles = profile_lock.as_ref().unwrap();
-                        let profile = profiles.je_client_profiles().iter().find(|p| p.id() == profile_id).unwrap();
-                        let versions_lock = VERSION_MANIFEST.read().unwrap();
-                        let version_manifest = versions_lock.as_ref().unwrap();
-                        let version = version_manifest.get_version(profile.version_name()).unwrap();
-                        version.install_and_get_launch_properties(&launcher_path, profile.mod_loader());
-
-                        // TODO installation dependent
-
-                        let cmd_builder = build_launch_command(&dev_game_path, &launcher_path, version, profile.mod_loader());
-
-                        let dev_clone = dev_game_path.clone();
-
-                        thread::spawn(move || generate_args_and_launch_game(dev_clone, cmd_builder));*/
+                        match launch_game(profile_id) {
+                            Ok(()) => {
+                                // Party!!!!!
+                            }
+                            Err(e) => {
+                                // Pass the error back to the gui, so it can be displayed
+                                message_send.send(JavaEditionInteraction(JeGuiInteraction::GameLaunchFailed(Arc::new(e)))).unwrap();
+                            }
+                        };
                     }
                     WorkerThreadTask::DownloadVersionManifest => {}
                     WorkerThreadTask::LoadProfiles => {}
