@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use regex::Regex;
-use reqwest::ClientBuilder;
+use reqwest::blocking::ClientBuilder;
 use reqwest::redirect::Policy;
 use reqwest_cookie_store::{CookieStore, CookieStoreMutex};
 use crate::gui::LauncherMessage;
