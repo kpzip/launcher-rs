@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use reqwest::blocking::Client;
 use reqwest::{redirect, Url};
+use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::util::hash::{FileHash, sha1_matches};
 
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
@@ -36,41 +37,39 @@ pub trait Downloadable {
         false
     }
 
-    fn custom_download_fn(&self, _game_version: &str) {}
+    fn custom_download_fn(&self, _game_version: &str) -> Result<(), LauncherError> { Ok(()) }
 
     // For convenience
-    fn download(&self, game_version: &str) where Self: Sized {
-        download(self, game_version);
+    fn download(&self, game_version: &str) -> Result<(), LauncherError> where Self: Sized {
+        download(self, game_version)
     }
 
 }
 
 
-// TODO Error Handling + Client and reduce allocations
-pub fn download<D: Downloadable>(download: &D, game_version: &str) {
+pub fn download<D: Downloadable>(download: &D, game_version: &str) -> Result<(), LauncherError> {
     if download.requires_custom_download_fn() {
-        download.custom_download_fn(game_version);
-        return;
+        return download.custom_download_fn(game_version);
     }
     let path = download.get_file_path(game_version);
     if let Ok(file) = File::open(&path) {
         if let Some(hash) = download.get_hash() {
             if sha1_matches(file, hash.as_slice()) {
-                return;
+                return Ok(());
             }
         }
     }
     // TODO find a good way to have the url be moved by the `Downloadable` Trait but also have urls be verified at deserialize time
-    // TODO use std::io::copy instead of reading the whole buffer and then writing it
     let url = download.get_download_url();
     if url.scheme() == "about" && url.path() == "blank" {
-        return;
+        return Ok(());
     }
-    let mut file = DEFAULT_DOWNLOADER_CLIENT.get(url.clone()).send().unwrap();
+    let mut file = DEFAULT_DOWNLOADER_CLIENT.get(url.clone()).send()?;
     //println!("Path: {:?}", &path);
     let dir = path.parent().unwrap();
     //println!("Path: {:?}", dir);
-    fs::create_dir_all(dir).unwrap();
-    let mut write_file = File::create(&path).unwrap();
-    io::copy(&mut file, &mut write_file).expect("Failed to copy data");
+    fs::create_dir_all(dir)?;
+    let mut write_file = File::create(&path)?;
+    io::copy(&mut file, &mut write_file)?;
+    return Ok(());
 }
