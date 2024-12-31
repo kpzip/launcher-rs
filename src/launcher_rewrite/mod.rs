@@ -45,18 +45,17 @@ pub fn launch_game(profile_id: u128) -> Result<(), LauncherError> {
 
             if need_to_install {
                 // Download vanilla json
-                version_info.download(version_info.id());
+                version_info.download(version_info.id())?;
                 // Download modded version json if needed
                 if let Some(manifest) = profile.mod_loader().get_manifest() {
-                    manifest.get_loader_version_info(profile.version_name(), profile.mod_loader_version()).download(profile.version_name())
+                    manifest.get_loader_version_info(profile.version_name(), profile.mod_loader_version()).download(profile.version_name())?;
                 }
             }
 
 
-            // TODO Error Handling
             let json_path = get_vanilla_client_json_path(version_info.id(), profile.mod_loader(), profile.mod_loader_version());
-            let client_file_contents = fs::read_to_string(json_path).expect("Failed to read client json");
-            let version: Version = serde_json::from_str(client_file_contents.as_str()).expect("Invalid Client Json!");
+            let client_file_contents = fs::read_to_string(json_path)?;
+            let version: Version = serde_json::from_str(client_file_contents.as_str())?;
 
             if need_to_install {
                 version.install();
@@ -76,15 +75,13 @@ pub fn launch_game(profile_id: u128) -> Result<(), LauncherError> {
             let res = convert_width_height(width, height);
 
             version.launch(username, uuid, token, res, Path::new(profile.mc_directory()));
-            return Ok(());
-        }
-        else {
+            Ok(())
+        } else {
             eprintln!("Attempted to launch profile with illegal version name {}!", profile.version_name());
-            return Err(LauncherError::ProfileError);
+            Err(LauncherError::ProfileError)
         }
-    }
-    else {
+    } else {
         eprintln!("Attempted to launch nonexistent profile with id {}!", profile_id);
-        return Err(LauncherError::ProfileError);
+        Err(LauncherError::ProfileError)
     }
 }
