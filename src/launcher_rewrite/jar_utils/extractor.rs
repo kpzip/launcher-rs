@@ -26,7 +26,7 @@ pub fn extract_if_needed(extracted_path: &Path, internal_path: &Path, jar_path: 
         Ok(s) => s,
         Err(e) => {
             eprintln!("Could not open internal file {}, because of the error: {}", internal_name.as_ref(), e);
-            return e.into();
+            return Err(e.into());
         }
     };
     let mut write_file = fs::File::create(extracted_path)?;
