@@ -34,7 +34,7 @@ mod error;
 // Number of game instances open. Know this so that way we can refrain from exiting the launcher process until all game instances were closed by the user.
 pub static GAME_INSTANCE_COUNT: AtomicUsize = AtomicUsize::new(0);
 
-pub fn launch_game(profile_id: u128) {
+pub fn launch_game(profile_id: u128) -> Result<(), LauncherError> {
     let profile_lock = PROFILES.read().unwrap();
     let profile = profile_lock.find_profile(profile_id);
     if let Some(profile) = profile {
@@ -75,7 +75,7 @@ pub fn launch_game(profile_id: u128) {
             let res = convert_width_height(width, height);
 
             version.launch(username, uuid, token, res, Path::new(profile.mc_directory()));
-
+            return Ok()
         }
         else {
             eprintln!("Attempted to launch profile with illegal version name {}!", profile.version_name());
