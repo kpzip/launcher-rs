@@ -3,6 +3,7 @@ mod home;
 pub mod installations;
 mod skins;
 
+use std::sync::Arc;
 use crate::gui::je::edit_installation::{edit_installations_tab_content, JeProfileChanged};
 use crate::gui::je::home::home_tab_content;
 use crate::gui::je::installations::installations_tab_content;
@@ -14,6 +15,7 @@ use iced::alignment::{Horizontal, Vertical};
 use iced::widget::{button, column, container, row, text, Space, markdown};
 use iced::{Element, Length};
 use crate::gui::style::{dark_container_style, generic_button_style};
+use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
 use crate::launcher_rewrite::profiles::{LauncherProfile, PROFILES};
 
@@ -37,12 +39,13 @@ impl Default for JeGuiState {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum JeGuiInteraction {
     SelectedProfileChanged(u128),
     SearchProfiles(String),
     ClickLink(markdown::Url),
     LaunchGame,
+    GameLaunchFailed(Arc<LauncherError>),
 }
 
 #[derive(Default, Debug, Clone, Copy)]
