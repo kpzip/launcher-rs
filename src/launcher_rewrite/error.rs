@@ -1,13 +1,14 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter, Write};
+use std::io;
 
 type LauncherResult<T> = Result<T, LauncherError>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum LauncherError {
-    ProfilesDeserializeError,
-    ClientDeserializeError,
-    DownloadError,
+    DeserializeError(serde_json::Error),
+    FsError(io::Error),
+    DownloadError(reqwest::Error),
     AccountError,
     ProfileError,
 }
@@ -23,4 +24,10 @@ impl Error for LauncherError {
         todo!()
     }
     
+}
+
+impl From<serde_json::Error> for LauncherError {
+    fn from(e: serde_json::Error) -> Self {
+        Self::DeserializeError(e)
+    }
 }
