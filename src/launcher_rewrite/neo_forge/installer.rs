@@ -48,7 +48,7 @@ pub fn download(loader_info: &ModLoaderVersionInfo, game_version: &str) -> Resul
 
     // Paths
     let temp_path = temp_file_path(format!("neoforge-{}-{}.jar.tmp", game_version, loader_version).as_str());
-    if let Some(p) = temp_path.parent() { if let Err(e) = fs::create_dir_all(p) { eprintln!("Error creating directory! {}", e); return e.into() } };
+    if let Some(p) = temp_path.parent() { if let Err(e) = fs::create_dir_all(p) { eprintln!("Error creating directory! {}", e); return Err(e.into()) } };
 
     let client_json_internal_path = Path::new(CLIENT_JSON_INTERNAL_PATH);
     let client_json_external_path = get_vanilla_client_json_path(game_version, ModLoader::NeoForge, loader_info.version_name());
