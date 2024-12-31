@@ -1,6 +1,6 @@
 pub mod account;
 pub mod general;
-mod je;
+pub mod je;
 mod je_server;
 pub mod macros;
 pub mod settings;
