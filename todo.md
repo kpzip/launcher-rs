@@ -4,7 +4,7 @@
 - [x] Forge support
 - [ ] Neo Forge support
 - [ ] Save profile changes dialog
-- [ ] Panic dialog
+- [x] Panic dialog
 - [ ] Better Error Handling when launching
 - [ ] 2FA support
 - [ ] auto detect missing files
