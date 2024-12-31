@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use const_format::concatcp;
 use reqwest::Url;
+use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::jar_utils::extractor::extract_if_needed;
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
@@ -39,7 +40,7 @@ impl Downloadable for NeoForgeJarDownloadable<'_> {
     }
 }
 
-pub fn download(loader_info: &ModLoaderVersionInfo, game_version: &str) {
+pub fn download(loader_info: &ModLoaderVersionInfo, game_version: &str) -> Result<(), LauncherError> {
     let loader_version = loader_info.version_name();
     let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
 
@@ -47,16 +48,16 @@ pub fn download(loader_info: &ModLoaderVersionInfo, game_version: &str) {
 
     // Paths
     let temp_path = temp_file_path(format!("neoforge-{}-{}.jar.tmp", game_version, loader_version).as_str());
-    if let Some(p) = temp_path.parent() { if let Err(e) = fs::create_dir_all(p) { eprintln!("Error creating directory! {}", e) } };
+    if let Some(p) = temp_path.parent() { if let Err(e) = fs::create_dir_all(p) { eprintln!("Error creating directory! {}", e); return e.into() } };
 
     let client_json_internal_path = Path::new(CLIENT_JSON_INTERNAL_PATH);
     let client_json_external_path = get_vanilla_client_json_path(game_version, ModLoader::NeoForge, loader_info.version_name());
 
     // Installer Jar
     let downloadable = NeoForgeJarDownloadable { loader_info, file_path: temp_path.as_path() };
-    downloadable.download(game_version);
+    downloadable.download(game_version)?;
 
     // Extract client json
-    extract_if_needed(client_json_external_path.as_path(), client_json_internal_path, temp_path.as_path());
-
+    extract_if_needed(client_json_external_path.as_path(), client_json_internal_path, temp_path.as_path())?;
+    Ok(())
 }
