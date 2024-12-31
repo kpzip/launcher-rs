@@ -103,6 +103,9 @@ impl JeGuiState {
                     eprintln!("Failed to open link: {e}");
                 });
             }
+            JeGuiInteraction::GameLaunchFailed(err) => {
+                // TODO display error nicely
+            }
         }
     }
 
