@@ -31,3 +31,15 @@ impl From<serde_json::Error> for LauncherError {
         Self::DeserializeError(e)
     }
 }
+
+impl From<reqwest::Error> for LauncherError {
+    fn from(e: reqwest::Error) -> Self {
+        Self::DownloadError(e)
+    }
+}
+
+impl From<io::Error> for LauncherError {
+    fn from(e: io::Error) -> Self {
+        Self::FsError(e)
+    }
+}
