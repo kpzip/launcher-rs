@@ -23,6 +23,7 @@ use std::slice::Iter;
 use std::str::FromStr;
 use std::{fs, vec};
 use regex::Regex;
+use crate::launcher_rewrite::error::LauncherError;
 
 #[derive(Debug, Clone)]
 pub struct Version {
@@ -42,27 +43,29 @@ impl Version {
         todo!()
     }
 
-    pub fn install(&self) {
+    pub fn install(&self) -> Result<(), LauncherError> {
         let version_name = self.game_version.as_str();
 
         // Libraries
-        self.libs.iter().for_each(|lib| lib.download(version_name));
+        self.libs.iter().map(|lib| lib.download(version_name)).collect::<Result<Vec<()>, LauncherError>>()?;
 
         // Assets
-        self.assets.download(version_name);
+        self.assets.download(version_name)?;
         let index_file = fs::read_to_string(self.assets.get_file_path(version_name)).unwrap();
         let assets_index: AssetsIndex = serde_json::from_str(index_file.as_str()).unwrap();
         assets_index.download_all(version_name);
 
         // Log configs
-        self.log_info.download(version_name);
+        self.log_info.download(version_name)?;
 
         // Extract dlls
         let extract_path = get_bin_path(version_name);
-        self.libs.iter().for_each(|lib| {
+        self.libs.iter().map(|lib| {
             let path = lib.get_file_path(version_name);
-            extract_dlls_from_jar(&extract_path, &path);
-        })
+            extract_dlls_from_jar(&extract_path, &path)?;
+            Ok(())
+        }).collect::<Result<Vec<()>, LauncherError>>()?;
+        Ok(())
     }
 
     pub fn id(&self) -> &str {
