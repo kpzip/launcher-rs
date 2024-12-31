@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::{Arc, LazyLock, Mutex, OnceLock};
 use iced::widget::markdown::Url;
 use crate::launcher_rewrite::{fabric, forge, neo_forge, quilt};
+use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::installer::Downloadable;
 use crate::launcher_rewrite::path_handler::get_vanilla_client_json_path;
 use crate::launcher_rewrite::profiles::ModLoader;
@@ -159,16 +160,16 @@ impl Downloadable for ModLoaderVersionInfo {
         }
     }
 
-    fn custom_download_fn(&self, game_version: &str) {
+    fn custom_download_fn(&self, game_version: &str) -> Result<(), LauncherError> {
         match self.loader {
             ModLoader::Vanilla => unreachable!(),
             ModLoader::Fabric => unreachable!(),
             ModLoader::Quilt => unreachable!(),
             ModLoader::Forge => {
-                forge::installer::download(&self, game_version);
+                forge::installer::download(&self, game_version)
             }
             ModLoader::NeoForge => {
-                neo_forge::installer::download(&self, game_version);
+                neo_forge::installer::download(&self, game_version)
             }
         }
     }
