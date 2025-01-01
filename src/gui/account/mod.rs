@@ -10,8 +10,9 @@ use iced::widget::horizontal_rule;
 use iced::widget::{button, column, container, row, text, Column, Scrollable, Space, TextInput};
 use iced::{color, Element, Length, theme};
 use std::sync::mpsc::Receiver;
-use std::sync::{mpsc, Mutex};
+use std::sync::{Arc, mpsc, Mutex};
 use crate::launcher_rewrite::authentication::LOGGED_IN_ACCOUNT_DATA;
+use crate::launcher_rewrite::error::LauncherError;
 
 #[derive(Clone, Debug)]
 pub enum AccountInteraction {
@@ -21,6 +22,7 @@ pub enum AccountInteraction {
     LoginSuccess,
     _2FARequired,
     InvalidCreds,
+    LoginError(Arc<LauncherError>),
     Logout(String),
     LogoutAll,
     UseAccount(String),
@@ -203,6 +205,9 @@ impl AccountTabState {
                     *waiting_for_sign_in = false;
                     *show_invalid_creds_text = true;
                 }
+            }
+            AccountInteraction::LoginError(e) => {
+                // Nothing for now
             }
         }
     }
