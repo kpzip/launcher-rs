@@ -122,10 +122,13 @@ pub fn edit_installations_tab_content(profile: &LauncherProfile) -> Element<'sta
 
     let icon = container(image(profile.icon()).filter_method(FilterMethod::Linear).width(128).height(128)).center_x(Length::Fill);
 
-    let name_selector = container(row![container(text("Installation Name: ")).center_y(Length::Fill).width(240), container(text_input("Profile Name", profile.name()).width(220).on_input(|s| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::NameChanged(s)))).center_y(Length::Fill).width(240),].height(40))
-        .center_x(Length::Fill);
-    let mod_loader_picker = container(row![container(text("Mod Loader: ")).center_y(Length::Fill).width(240), container(PickList::new(mod_loader_list, Some(profile.mod_loader()), |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::ModLoaderChanged(loader)))).center_y(Length::Fill).width(240),].height(40))
-        .center_x(Length::Fill);
+    let name_selector = container(row![
+        container(Space::new(Length::Fill, Length::Fill)).center_y(Length::Fill).width(32),
+        container(text("Installation Name: ")).center_y(Length::Fill).width(240),
+        container(text_input("Profile Name", profile.name()).width(220).on_input(|s| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::NameChanged(s)))).center_y(Length::Fill).width(240),
+        container(image(format!("{}/assets/characters/info.png", env!("CARGO_MANIFEST_DIR"))).width(Length::Fill).height(Length::Fill)).center_y(Length::Fill).width(32),
+    ].height(40)).center_x(Length::Fill);
+    let mod_loader_picker = container(row![container(text("Mod Loader: ")).center_y(Length::Fill).width(240), container(PickList::new(mod_loader_list, Some(profile.mod_loader()), |loader| GuiMessage::JavaEditionProfileChanged(JeProfileChanged::ModLoaderChanged(loader)))).center_y(Length::Fill).width(240),].height(40)).center_x(Length::Fill);
 
     let mut loader_version_list = profile.mod_loader().get_manifest().map(|m| m.get_loader_versions(GAME_VERSION_MANIFEST.sanitize_version_name(profile.version_name())).iter().map(|v| v.version_name().to_owned()).collect()).unwrap_or(Vec::new()); //["latest-stable".to_owned(), "latest-beta".to_owned()];
     if !loader_version_list.is_empty() {
