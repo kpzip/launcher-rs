@@ -6,7 +6,7 @@ use crate::launcher_rewrite::path_handler::{INSTALLED_VERSIONS_FILE_PATH, TOKENS
 use crate::launcher_rewrite::util::config_file::save_to_file;
 
 pub mod account_data;
-mod login;
+pub mod login;
 
 pub static LOGGED_IN_ACCOUNT_DATA: LazyLock<RwLock<AccountData>> = LazyLock::new(|| RwLock::new(get_account_data()));
 
