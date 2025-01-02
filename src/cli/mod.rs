@@ -1,4 +1,5 @@
 use std::ffi::OsString;
+use std::num::NonZeroU16;
 use std::path::Path;
 use std::sync::atomic::Ordering;
 use std::thread::sleep;
@@ -25,6 +26,12 @@ struct Args {
     height: Option<u32>,
     #[arg(short, long, default_value_t = ("%appdata%/.minecraft/".to_owned()))]
     dir: String,
+    #[arg(short, long, default_value_t = 2)]
+    memory: u16,
+    #[arg(short, long, action)]
+    no_gui: bool,
+    #[arg(long, action)]
+    debug: bool,
 }
 
 impl Args {
@@ -55,19 +62,35 @@ impl Args {
     pub fn dir(&self) -> &Path {
         Path::new(&self.dir)
     }
+
+    pub fn memory(&self) -> u16 {
+        self.memory
+    }
+
+    pub fn no_gui(&self) -> bool {
+        self.no_gui
+    }
+
+    pub fn debug(&self) -> bool {
+        self.debug
+    }
 }
 
-pub fn cli_main() {
+pub fn cli_main() -> bool {
     let args = Args::parse();
 
-    let launched = launch_game(args.game_version(), args.loader(), args.loader_version(), args.width(), args.height(), args.dir());
-
-    loop {
-        if GAME_INSTANCE_COUNT.load(Ordering::SeqCst) == 0 {
-            break;
-        }
-        // Sleep just to let the os run other tasks
-        sleep(Duration::from_millis(1000));
+    if !args.no_gui() {
+        return true;
     }
-    println!("Launcher Exiting!");
+
+    let launched = launch_game(args.game_version(), args.loader(), args.loader_version(), args.width(), args.height(), args.dir(), args.memory());
+    match launched {
+        Ok(()) => {
+            println!("Launching...")
+        },
+        Err(e) => {
+            eprintln!("Error launching game! {}", e)
+        },
+    }
+    return false;
 }
