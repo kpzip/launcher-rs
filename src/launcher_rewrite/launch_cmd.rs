@@ -27,9 +27,10 @@ impl Version {
         let game_dir = DEV_GAME_DIR.as_path();
         fs::create_dir_all(game_dir).expect("Failed to create game directory");
         let mut cmd = Command::new("java");
-        cmd.current_dir(game_dir).raw_arg(get_jvm_args(&self, resolution).as_str()).raw_arg(self.main_class()).raw_arg(get_game_args(&self, username, uuid, token, resolution, game_dir).as_str());
-        println!("Main Class: {}", self.main_class());
-        println!("Command: {:?}", cmd);
+        cmd.current_dir(game_dir).raw_arg(get_jvm_args(&self, resolution, memory).as_str()).raw_arg(self.main_class()).raw_arg(get_game_args(&self, username, uuid, token, resolution, game_dir).as_str());
+        //println!("Main Class: {}", self.main_class());
+        //println!("Command: {:?}", cmd);
+        GAME_INSTANCE_COUNT.fetch_add(1, Ordering::SeqCst);
         let _ = thread::Builder::new().name("Game Process Thread".to_owned()).spawn(move || {
             GAME_INSTANCE_COUNT.fetch_add(1, Ordering::SeqCst);
             match cmd.status() {
