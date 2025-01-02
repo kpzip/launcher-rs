@@ -3,8 +3,8 @@ use std::thread;
 use std::time::Duration;
 use iced::{Element, Size, Subscription, Task, time, window};
 use iced::widget::text;
-use crate::gui::{LauncherGui, LauncherMessage, LauncherRenderer, LauncherTheme, MC_FONT};
-use crate::MC_FONT_BYTES;
+use crate::gui::{LauncherRenderer, LauncherTheme, MC_FONT};
+use crate::gui::MC_FONT_BYTES;
 
 #[must_use]
 pub fn open_game_output_window() -> Arc<Mutex<String>> {
