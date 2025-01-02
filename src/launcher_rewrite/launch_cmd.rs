@@ -3,6 +3,7 @@ use std::path::Path;
 use std::process::{Child, Command};
 use std::sync::atomic::Ordering;
 use std::{fs, thread};
+use std::num::NonZeroUsize;
 use std::sync::LazyLock;
 use aho_corasick::AhoCorasick;
 use regex::Regex;
@@ -22,7 +23,7 @@ static MODULE_PATH_JAR_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"[
 
 impl Version {
 
-    pub fn launch(&self, username: &str, uuid: &str, token: &str, resolution: Option<(u32, u32)>, game_dir: &Path) {
+    pub fn launch(&self, username: &str, uuid: &str, token: &str, resolution: Option<(u32, u32)>, memory: u16, game_dir: &Path) {
         #[cfg(debug_assertions)]
         let game_dir = DEV_GAME_DIR.as_path();
         fs::create_dir_all(game_dir).expect("Failed to create game directory");
@@ -32,7 +33,7 @@ impl Version {
         //println!("Command: {:?}", cmd);
         GAME_INSTANCE_COUNT.fetch_add(1, Ordering::SeqCst);
         let _ = thread::Builder::new().name("Game Process Thread".to_owned()).spawn(move || {
-            GAME_INSTANCE_COUNT.fetch_add(1, Ordering::SeqCst);
+            // IMPORTANT: Panicking here could cause issues since the active instance count may not be decremented properly!
             match cmd.status() {
                 Ok(_) => {}
                 Err(e) => {
@@ -89,7 +90,7 @@ fn get_game_args(version: &Version, username: &str, uuid: &str, token: &str, res
     formatted
 }
 
-fn get_jvm_args(version: &Version, resolution: Option<(u32, u32)>) -> String {
+fn get_jvm_args(version: &Version, resolution: Option<(u32, u32)>, memory: u16) -> String {
 
     let has_custom_resolution = resolution.is_some();
     let quick_play = false;
@@ -134,5 +135,6 @@ fn get_jvm_args(version: &Version, resolution: Option<(u32, u32)>) -> String {
         // TODO optimize
         formatted = formatted.replace(module_path_str, module_path.as_str());
     }
+    formatted.push_str(format!(" -Xms{0}G -Xmx{0}G", memory).as_str());
     formatted
 }
