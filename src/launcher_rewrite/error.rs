@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter, Write};
 use std::io;
 use crate::launcher_rewrite::error::LauncherError::ProfileError;
 
-type LauncherResult<T> = Result<T, LauncherError>;
+pub type LauncherResult<T> = Result<T, LauncherError>;
 
 #[derive(Debug)]
 pub enum LauncherError {
