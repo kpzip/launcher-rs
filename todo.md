@@ -5,12 +5,18 @@
 - [ ] Neo Forge support
 - [ ] Save profile changes dialog
 - [x] Panic dialog
+- [ ] Make `latest-release` use the latest supported version for mod loaders
 - [ ] Better Error Handling when launching
 - [ ] 2FA support
 - [ ] auto detect missing files
 - [ ] cache and lazily update manifests
+- [ ] include images
 - [ ] installer
 - [ ] basic server support
 - [ ] UI improvements
 - [ ] JVM bundling
 - [ ] Testing
+- [x] Command Line Mode
+- [x] Refactor code to take into account cli and gui
+- [ ] Shortcuts
+- [x] Fix issue with installed version info
