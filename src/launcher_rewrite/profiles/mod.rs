@@ -276,7 +276,7 @@ impl Display for ModLoader {
 pub struct LauncherPersistentState {
     #[serde(flatten)]
     settings: LauncherSettings,
-    selected_profile_id: u128,
+    pub selected_profile_id: u128,
 }
 
 impl Deref for LauncherPersistentState {
