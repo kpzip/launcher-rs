@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use reqwest::blocking::Client;
 use reqwest::{redirect, Url};
-use crate::launcher_rewrite::error::LauncherError;
+use crate::launcher_rewrite::error::{LauncherError, LauncherResult};
 use crate::launcher_rewrite::util::hash::{FileHash, sha1_matches};
 
 pub const APP_USER_AGENT: &str = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
@@ -37,7 +37,7 @@ pub trait Downloadable {
         false
     }
 
-    fn custom_download_fn(&self, _game_version: &str) -> Result<(), LauncherError> { Ok(()) }
+    fn custom_download_fn(&self, _game_version: &str) -> LauncherResult<()> { Ok(()) }
 
     // For convenience
     fn download(&self, game_version: &str) -> Result<(), LauncherError> where Self: Sized {
@@ -47,7 +47,7 @@ pub trait Downloadable {
 }
 
 
-pub fn download<D: Downloadable>(download: &D, game_version: &str) -> Result<(), LauncherError> {
+pub fn download<D: Downloadable>(download: &D, game_version: &str) -> LauncherResult<()> {
     if download.requires_custom_download_fn() {
         return download.custom_download_fn(game_version);
     }
@@ -59,7 +59,7 @@ pub fn download<D: Downloadable>(download: &D, game_version: &str) -> Result<(),
             }
         }
     }
-    // TODO find a good way to have the url be moved by the `Downloadable` Trait but also have urls be verified at deserialize time
+
     let url = download.get_download_url();
     if url.scheme() == "about" && url.path() == "blank" {
         return Ok(());
