@@ -20,10 +20,24 @@ pub fn save_installed_versions() {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+struct InstalledVersionInfo  {
+    pub game_version: String,
+    pub loader: ModLoader,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub loader_version: Option<String>
+}
+
+impl InstalledVersionInfo {
+    fn new(game_version: String, loader: ModLoader, loader_version: Option<String>) -> Self {
+        Self { game_version, loader, loader_version }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct InstalledVersions {
     #[serde(skip_deserializing, default = "comment", rename = "__comment")]
     comment: &'static str,
-    installed: Vec<(ModLoader, Option<String>, String)>,
+    installed: Vec<InstalledVersionInfo>,
 }
 
 impl InstalledVersions {
@@ -33,11 +47,11 @@ impl InstalledVersions {
     }
 
     pub fn contains(&self, version: &str, loader: ModLoader, loader_version: Option<&str>) -> bool {
-        self.installed.iter().find(|(loader_c, loader_version_c, name)| loader == *loader_c && version == name && option_comparison(loader_version_c.as_ref(), loader_version)).is_some()
+        self.installed.iter().find(|inf| loader == inf.loader && version == inf.game_version && option_comparison(inf.loader_version.as_ref(), loader_version)).is_some()
     }
 
     pub fn add(&mut self, version: &str, loader: ModLoader, loader_version: Option<&str>) {
-        self.installed.push((loader, loader_version.map(|s| s.to_owned()), version.to_owned()));
+        self.installed.push(InstalledVersionInfo::new(version.to_owned(), loader, loader_version.map(|s| s.to_owned())));
     }
 
 }
