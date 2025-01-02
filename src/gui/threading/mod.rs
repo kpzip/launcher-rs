@@ -20,8 +20,10 @@ use tokio::sync::mpsc::UnboundedSender;
 use crate::gui::GuiMessage::JavaEditionInteraction;
 use crate::gui::je::JeGuiInteraction;
 use crate::launcher_rewrite::authentication::LOGGED_IN_ACCOUNT_DATA;
+use crate::launcher_rewrite::authentication::login::{login, LoginState};
+use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::installer::Downloadable;
-use crate::launcher_rewrite::launch_game;
+use crate::launcher_rewrite::{launch_game, launch_game_from_profile};
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
 use crate::launcher_rewrite::profiles::PROFILES;
 
@@ -69,7 +71,7 @@ fn worker_thread(comms: Receiver<WorkerThreadTask>, message_send: UnboundedSende
             Ok(v) => {
                 match v {
                     WorkerThreadTask::LaunchGame(profile_id) => {
-                        match launch_game(profile_id) {
+                        match launch_game_from_profile(profile_id) {
                             Ok(()) => {
                                 // Party!!!!!
                             }
@@ -82,7 +84,17 @@ fn worker_thread(comms: Receiver<WorkerThreadTask>, message_send: UnboundedSende
                     WorkerThreadTask::DownloadVersionManifest => {}
                     WorkerThreadTask::LoadProfiles => {}
                     WorkerThreadTask::Shutdown => break 'events,
-                    WorkerThreadTask::MicrosoftLogin { username, password } => 'login: {
+                    WorkerThreadTask::MicrosoftLogin { username, password } => {
+                        message_send.send(match login(username, password) {
+                            Ok(l) => match l {
+                                    LoginState::Requires2FA(c) => LauncherMessage::AccountTabInteraction(AccountInteraction::_2FARequired),
+                                    LoginState::InvalidCredentials => LauncherMessage::AccountTabInteraction(AccountInteraction::InvalidCreds),
+                                    LoginState::LoggedIn => LauncherMessage::AccountTabInteraction(AccountInteraction::LoginSuccess),
+                                },
+                            Err(e) => JavaEditionInteraction(JeGuiInteraction::GameLaunchFailed(Arc::new(e))),
+                        }).unwrap();
+
+                        /*
                         let cookies = Arc::new(CookieStoreMutex::new(CookieStore::default()));
 
                         let client = ClientBuilder::new().user_agent(APP_USER_AGENT).redirect(Policy::default()).cookie_provider(cookies).build().unwrap();
@@ -169,7 +181,7 @@ fn worker_thread(comms: Receiver<WorkerThreadTask>, message_send: UnboundedSende
 
                         LOGGED_IN_ACCOUNT_DATA.write().unwrap().add_account_and_set_active(complete_token_info);
 
-                        message_send.send(LauncherMessage::AccountTabInteraction(AccountInteraction::LoginSuccess)).unwrap();
+                        message_send.send(LauncherMessage::AccountTabInteraction(AccountInteraction::LoginSuccess)).unwrap();*/
                     }
                 }
             }
