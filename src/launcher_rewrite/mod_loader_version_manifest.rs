@@ -11,6 +11,9 @@ use crate::launcher_rewrite::path_handler::get_vanilla_client_json_path;
 use crate::launcher_rewrite::profiles::ModLoader;
 use crate::launcher_rewrite::util::hash::FileHash;
 
+pub const LATEST_STABLE_TEXT: &str = "latest-stable";
+pub const LATEST_BETA_TEXT: &str = "latest-beta";
+
 pub static FABRIC_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Fabric, fabric::get_compatible_versions));
 pub static QUILT_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Quilt, quilt::get_compatible_versions));
 pub static FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Forge, forge::get_compatible_versions));
@@ -38,10 +41,10 @@ impl ModLoaderVersionManifest {
 
     pub fn contains(&self, game_version_name: &str, loader_version_name: &str) -> bool {
         match loader_version_name {
-            "latest-stable" => {
+            LATEST_STABLE_TEXT => {
                 self.has_stable_loader_version_for_game_version(game_version_name)
             },
-            "latest-beta" => {
+            LATEST_BETA_TEXT => {
                 self.get_loader_versions(game_version_name).is_empty()
             }
             loader_version_name => {
@@ -52,7 +55,7 @@ impl ModLoaderVersionManifest {
 
     pub fn sanitize_loader_version_name<'a>(&'a self, game_version_name: &str, loader_version_name: &'a str) -> Cow<'a, str> {
         match loader_version_name {
-            "latest-stable" => {
+            LATEST_STABLE_TEXT => {
                 if let Some(v) = self.get_loader_versions(game_version_name).iter().find(|v| v.is_stable()) {
                     v.version_name.clone().into()
                 }
@@ -60,7 +63,7 @@ impl ModLoaderVersionManifest {
                     panic!("No stable loader version found for loader `{:?}` for game version `{}`.", self.loader, game_version_name);
                 }
             },
-            "latest-beta" => {
+            LATEST_BETA_TEXT => {
                 if let Some(v) = self.get_loader_versions(game_version_name).get(0) {
                     v.version_name.clone().into()
                 }
