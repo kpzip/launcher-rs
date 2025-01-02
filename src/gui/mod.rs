@@ -21,12 +21,20 @@ use iced::widget::image::FilterMethod;
 use iced::widget::{button, column, container, image, row, text};
 use iced::{Element, Font, Length, Renderer, Size, Subscription, Task, Theme, window};
 use std::cell::RefCell;
-use std::sync::mpsc::Receiver;
-use iced::advanced::graphics::futures::subscription;
-use tokio::net::windows::named_pipe::PipeMode::Message;
+use std::panic::set_hook;
+use std::sync::atomic::AtomicBool;
+use std::sync::Mutex;
+use native_dialog::{MessageDialog, MessageType};
 use tokio::sync::mpsc::UnboundedReceiver;
+use crate::gui::threading::WorkerThread;
 
 pub const MC_FONT: Font = Font::with_name("Minecraft");
+const MC_FONT_BYTES: &[u8] = include_bytes!("../../assets/minecraft_font.ttf");
+
+pub static IS_ONLINE: AtomicBool = AtomicBool::new(true);
+pub static WORKER_THREAD_HANDLE: Mutex<Option<WorkerThread>> = Mutex::new(None);
+
+
 
 pub type LauncherExecutor = iced::executor::Default;
 pub type LauncherMessage = GuiMessage;
@@ -200,4 +208,37 @@ impl LauncherGui {
     fn sidebar_settings_button(&self) -> Element<'static, LauncherMessage, LauncherTheme, LauncherRenderer> {
         container(button("Settings").style(generic_button_style).on_press(LauncherMessage::SelectMainMenu(GameMenu::Settings(Default::default()))).padding(10).width(Length::Fill)).center_x(Length::Fill).into()
     }
+}
+
+pub(crate) fn gui_main() {
+    set_hook(Box::new(|p| {
+        let mut panic_message_str = "";
+        let location_str = p.location().map(|loc| loc.to_string()).unwrap_or(String::new());
+        if let Some(pstr) = p.payload_as_str() {
+            panic_message_str = pstr;
+        }
+
+        let err_dialog = MessageDialog::new().set_type(MessageType::Error).set_title("Launcher Error").set_text(format!("Launcher panicked: {}\nPanic Location: {}", panic_message_str, location_str).as_str()).show_alert();
+    }));
+
+    let (message_send, message_receive) = tokio::sync::mpsc::unbounded_channel::<LauncherMessage>();
+
+    let mut lock = WORKER_THREAD_HANDLE.lock().unwrap();
+    lock.replace(WorkerThread::new(message_send));
+    drop(lock);
+
+    let window_settings = window::Settings {
+        size: Size::new(1280_f32, 720_f32),
+        resizable: true,
+        decorations: true,
+        ..Default::default()
+    };
+
+    iced::application(LauncherGui::title, LauncherGui::update, LauncherGui::view)
+        .window(window_settings)
+        .font(MC_FONT_BYTES)
+        .default_font(MC_FONT)
+        .subscription(LauncherGui::subscription)
+        .run_with(move || LauncherGui::new(Flags::new(message_receive)))
+        .expect("Failed to initialize gui application.");
 }
