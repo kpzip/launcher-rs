@@ -90,6 +90,7 @@ impl JeGuiState {
         match interaction {
             JeGuiInteraction::SelectedProfileChanged(id) => {
                 self.selected_profile_id = id;
+                PROFILES.write().unwrap().settings_mut().selected_profile_id = id;
             }
             JeGuiInteraction::LaunchGame => {
                 WORKER_THREAD_HANDLE.lock().unwrap().as_ref().unwrap().send(WorkerThreadTask::LaunchGame(self.selected_profile_id)).expect("TODO: panic message");
