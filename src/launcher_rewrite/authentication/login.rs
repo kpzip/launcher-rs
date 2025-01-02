@@ -1,16 +1,25 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use regex::Regex;
+use reqwest::blocking;
 use reqwest::blocking::ClientBuilder;
 use reqwest::redirect::Policy;
 use reqwest_cookie_store::{CookieStore, CookieStoreMutex};
-use crate::gui::LauncherMessage;
 use crate::launcher_rewrite::authentication::account_data::{LoggedInAccount, MicrosoftTokenInfo, MinecraftAccountInfo, MinecraftTokenInfo, XboxLiveTokenInfo};
 use crate::launcher_rewrite::authentication::LOGGED_IN_ACCOUNT_DATA;
+use crate::launcher_rewrite::authentication::login::LoginState::{InvalidCredentials, LoggedIn, Requires2FA};
 use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::installer::APP_USER_AGENT;
 
-pub fn login(username: String, password: String) -> Result<(), LauncherError> {
+#[derive(Debug, Clone)]
+#[must_use]
+pub enum LoginState {
+    Requires2FA(blocking::Client),
+    InvalidCredentials,
+    LoggedIn,
+}
+
+pub fn login(username: String, password: String) -> Result<LoginState, LauncherError> {
     let cookies = Arc::new(CookieStoreMutex::new(CookieStore::default()));
 
     let client = ClientBuilder::new().user_agent(APP_USER_AGENT).redirect(Policy::default()).cookie_provider(cookies).build().unwrap();
@@ -42,13 +51,13 @@ pub fn login(username: String, password: String) -> Result<(), LauncherError> {
     if response.contains("Sign in to") {
         // Wrong Credentials
         println!("Wrong Creds!");
-
+        return Ok(InvalidCredentials);
     }
 
     if response.contains("Help us protect your account") {
         // 2FA
         println!("2FA Required");
-
+        return Ok(Requires2FA(client))
     }
 
     let raw_login_data = final_url.split_once("#").unwrap().1;
@@ -94,5 +103,5 @@ pub fn login(username: String, password: String) -> Result<(), LauncherError> {
     let complete_token_info = LoggedInAccount::new(ms_token_info, xbox_token_info, xsts_token_info, minecraft_token_info, profile_info);
 
     LOGGED_IN_ACCOUNT_DATA.write().unwrap().add_account_and_set_active(complete_token_info);
-    Ok(())
+    Ok(LoggedIn)
 }
