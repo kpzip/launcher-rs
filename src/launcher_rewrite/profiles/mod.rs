@@ -4,6 +4,7 @@ use std::ops::Deref;
 use std::sync::{LazyLock, RwLock};
 
 use base64::Engine;
+use clap::ValueEnum;
 use rand::random;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{Error, Visitor};
@@ -220,7 +221,7 @@ pub fn convert_width_height(width: Option<u32>, height: Option<u32>) -> Option<(
     Some((width?, height?))
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Hash, Clone, Copy, Default)]
+#[derive(Serialize, Deserialize, ValueEnum, Debug, Eq, PartialEq, Hash, Clone, Copy, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ModLoader {
     #[default]
