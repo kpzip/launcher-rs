@@ -2,6 +2,7 @@ pub mod edit_installation;
 mod home;
 pub mod installations;
 mod skins;
+mod create_shortcut;
 
 use std::sync::Arc;
 use crate::gui::je::edit_installation::{edit_installations_tab_content, JeProfileChanged};
@@ -14,6 +15,7 @@ use crate::gui::WORKER_THREAD_HANDLE;
 use iced::alignment::{Horizontal, Vertical};
 use iced::widget::{button, column, container, row, text, Space, markdown};
 use iced::{Element, Length};
+use crate::gui::je::create_shortcut::ShortcutInfo;
 use crate::gui::style::{dark_container_style, generic_button_style};
 use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
@@ -22,6 +24,7 @@ use crate::launcher_rewrite::profiles::{LauncherProfile, PROFILES};
 pub struct JeGuiState {
     current_tab: JavaEditionTab,
     profile_edit: LauncherProfile,
+    shortcut_info: ShortcutInfo,
     selected_profile_id: u128,
     is_launching: bool,
     profile_search_content: String,
@@ -55,6 +58,7 @@ pub enum JavaEditionTab {
     Skins,
     Installations,
     EditProfile(Option<u128>),
+    CreateShortcut,
 }
 
 impl JeGuiState {
