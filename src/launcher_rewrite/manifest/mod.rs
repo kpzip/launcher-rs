@@ -56,7 +56,8 @@ impl GameVersionManifest {
     /// Converts `latest-release` and `latest-snapshot` into their respective actual version names based on the manifest info.
     /// Returns `name` if `name` is an invalid version!
     ///
-    pub fn sanitize_version_name<'a>(&'a self, name: &'a str) -> &'a str {
+    pub fn sanitize_version_name<'a>(&'a self, name: &'a str, loader: ModLoader) -> &'a str {
+        // TODO use loader
         match name {
             LATEST_RELEASE_TEXT => self.latest.as_str(),
             LATEST_SNAPSHOT_TEXT => self.latest_snapshot.as_str(),
