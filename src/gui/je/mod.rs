@@ -35,6 +35,7 @@ impl Default for JeGuiState {
         Self {
             current_tab: Default::default(),
             profile_edit: Default::default(),
+            shortcut_info: Default::default(),
             selected_profile_id: PROFILES.read().unwrap().settings().selected_profile_id(),
             is_launching: false,
             profile_search_content: Default::default(),
