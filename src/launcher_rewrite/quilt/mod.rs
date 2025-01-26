@@ -33,7 +33,7 @@ impl ModLoaderVersionInfo {
 pub fn get_compatible_versions(game_version: &str) -> Vec<ModLoaderVersionInfo> {
     // Sanitize just in case
     // Can probably be commented out
-    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
+    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version, ModLoader::Quilt);
     let url = format!("{}{}", QUILT_VERSIONS_URL, game_version);
     if let Ok(response_json) = DEFAULT_DOWNLOADER_CLIENT.get(url).header(ACCEPT_HEADER_NAME, APPLICATION_JSON).send() {
         // println!("Sent Request! Response: {:?}", response_json.text());
