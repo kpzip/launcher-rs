@@ -57,10 +57,23 @@ impl GameVersionManifest {
     /// Returns `name` if `name` is an invalid version!
     ///
     pub fn sanitize_version_name<'a>(&'a self, name: &'a str, loader: ModLoader) -> &'a str {
-        // TODO use loader
         match name {
-            LATEST_RELEASE_TEXT => self.latest.as_str(),
-            LATEST_SNAPSHOT_TEXT => self.latest_snapshot.as_str(),
+            LATEST_RELEASE_TEXT => {
+                if let Some(loader_manifest) = loader.get_manifest() {
+                    let supported = loader_manifest.latest_supported_game_versions();
+                    supported.latest_supported_release()
+                } else {
+                    self.latest.as_str()
+                }
+            },
+            LATEST_SNAPSHOT_TEXT => {
+                if let Some(loader_manifest) = loader.get_manifest() {
+                    let supported = loader_manifest.latest_supported_game_versions();
+                    supported.latest_supported_snapshot()
+                } else {
+                    self.latest_snapshot.as_str()
+                }
+            },
             other => other,
         }
     }
