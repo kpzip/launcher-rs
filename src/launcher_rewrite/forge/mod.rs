@@ -6,7 +6,7 @@ use regex::Regex;
 use reqwest::Url;
 use crate::launcher_rewrite::installer::{ACCEPT_HEADER_NAME, APPLICATION_JSON, DEFAULT_DOWNLOADER_CLIENT};
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
-use crate::launcher_rewrite::mod_loader_version_manifest::{ModLoaderVersionInfo, ModLoaderVersionType};
+use crate::launcher_rewrite::mod_loader_version_manifest::{ModLoaderLatestVersionData, ModLoaderVersionInfo, ModLoaderVersionType};
 use crate::launcher_rewrite::profiles::ModLoader;
 
 const FORGE_INDEX_URL_PREFIX: &str = "https://files.minecraftforge.net/net/minecraftforge/forge/index_";
@@ -58,4 +58,9 @@ pub fn get_compatible_versions(game_version: &str) -> Vec<ModLoaderVersionInfo> 
         }
     }
     return Vec::new()
+}
+
+pub fn get_latest_supported_game_version() -> ModLoaderLatestVersionData {
+    // TODO web scraping
+    return ModLoaderLatestVersionData::new("".to_owned(), "".to_owned())
 }
