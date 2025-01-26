@@ -28,7 +28,7 @@ static VERSION_NAME_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"\d+\
 
 
 pub fn get_compatible_versions(game_version: &str) -> Vec<ModLoaderVersionInfo> {
-    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
+    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version, ModLoader::Forge);
 
     // We do a little web scraping
     let url = format!("{}{}{}", FORGE_INDEX_URL_PREFIX, game_version, FORGE_INDEX_URL_SUFFIX);
