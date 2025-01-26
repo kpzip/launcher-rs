@@ -18,7 +18,7 @@ static LIST_ELEMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"(?s)
 static LOADER_VERSION_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"(?s)\d+\.\d+\.\d+(-beta)?"#).expect("Failed to compile regex!"));
 
 pub fn get_compatible_versions(game_version: &str) -> Vec<ModLoaderVersionInfo> {
-    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
+    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version, ModLoader::NeoForge);
     let truncated_game_version = game_version.split_once('.').expect("invalid version name").1;
 
     // We do a little web scraping
