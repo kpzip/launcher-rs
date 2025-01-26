@@ -14,12 +14,12 @@ use crate::launcher_rewrite::util::hash::FileHash;
 pub const LATEST_STABLE_TEXT: &str = "latest-stable";
 pub const LATEST_BETA_TEXT: &str = "latest-beta";
 
-pub static FABRIC_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Fabric, fabric::get_compatible_versions));
-pub static QUILT_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Quilt, quilt::get_compatible_versions));
-pub static FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Forge, forge::get_compatible_versions));
-pub static NEO_FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::NeoForge, neo_forge::get_compatible_versions));
+pub static FABRIC_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Fabric, fabric::get_compatible_versions, fabric::get_latest_supported_game_version));
+pub static QUILT_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Quilt, quilt::get_compatible_versions, quilt::get_latest_supported_game_version));
+pub static FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::Forge, forge::get_compatible_versions, forge::get_latest_supported_game_version));
+pub static NEO_FORGE_MANIFEST: LazyLock<ModLoaderVersionManifest> = LazyLock::new(|| ModLoaderVersionManifest::new(ModLoader::NeoForge, neo_forge::get_compatible_versions, neo_forge::get_latest_supported_game_version));
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug/*, Default, Clone*/)]
 pub struct ModLoaderVersionManifest {
     loader: ModLoader,
     versions_map: ModLoaderVersionMap,
@@ -29,6 +29,10 @@ impl ModLoaderVersionManifest {
 
     pub fn get_loader_versions(&self, game_version_name: &str) -> Arc<[ModLoaderVersionInfo]> {
         self.versions_map.get(game_version_name)
+    }
+
+    pub fn latest_supported_game_versions(&self) -> &ModLoaderLatestVersionData {
+        self.versions_map.latest()
     }
 
     pub fn has_loader_for_game_version(&self, game_version_name: &str) -> bool {
@@ -88,8 +92,8 @@ impl ModLoaderVersionManifest {
         }
     }
 
-    pub fn new(loader: ModLoader, version_func: fn(&str) -> Vec<ModLoaderVersionInfo>) -> Self {
-        Self { loader, versions_map: ModLoaderVersionMap::new(version_func, Mutex::new(HashMap::new())) }
+    pub fn new(loader: ModLoader, version_func: fn(&str) -> Vec<ModLoaderVersionInfo>, latest_version_func: fn() -> ModLoaderLatestVersionData) -> Self {
+        Self { loader, versions_map: ModLoaderVersionMap::new(version_func, Mutex::new(HashMap::new()), latest_version_func) }
     }
 }
 
@@ -195,8 +199,29 @@ impl From<bool> for ModLoaderVersionType {
 }
 
 #[derive(Debug)]
+pub struct ModLoaderLatestVersionData {
+    latest_supported_snapshot: String,
+    latest_supported_release: String,
+}
+
+impl ModLoaderLatestVersionData {
+    pub fn latest_supported_snapshot(&self) -> &str {
+        &self.latest_supported_snapshot
+    }
+
+    pub fn latest_supported_release(&self) -> &str {
+        &self.latest_supported_release
+    }
+
+    pub fn new(latest_supported_snapshot: String, latest_supported_release: String) -> Self {
+        Self { latest_supported_snapshot, latest_supported_release }
+    }
+}
+
+#[derive(Debug)]
 pub struct ModLoaderVersionMap {
     version_getter: fn(&str) -> Vec<ModLoaderVersionInfo>,
+    latest_supported_game_version: LazyLock<ModLoaderLatestVersionData>,
     versions_map: Mutex<HashMap<String, Arc<[ModLoaderVersionInfo]>>>,
 }
 
@@ -215,6 +240,10 @@ impl ModLoaderVersionMap {
 
     }
 
+    pub fn latest(&self) -> &ModLoaderLatestVersionData {
+        &self.latest_supported_game_version
+    }
+
     pub fn contains(&self, game_version: &str) -> bool {
         let mut versions_lock = self.versions_map.lock().unwrap();
         let value = versions_lock.get(game_version);
@@ -228,25 +257,27 @@ impl ModLoaderVersionMap {
         }
     }
 
-    pub fn new(version_getter: fn(&str) -> Vec<ModLoaderVersionInfo>, versions_map: Mutex<HashMap<String, Arc<[ModLoaderVersionInfo]>>>) -> Self {
-        Self { version_getter, versions_map }
+    pub fn new(version_getter: fn(&str) -> Vec<ModLoaderVersionInfo>, versions_map: Mutex<HashMap<String, Arc<[ModLoaderVersionInfo]>>>, latest_supported_game_version_getter: fn() -> ModLoaderLatestVersionData) -> Self {
+        Self { version_getter, latest_supported_game_version: LazyLock::new(latest_supported_game_version_getter), versions_map }
     }
 }
 
-impl Default for ModLoaderVersionMap {
-    fn default() -> Self {
-        Self {
-            version_getter: |_| Vec::new(),
-            versions_map: Mutex::new(HashMap::new()),
-        }
-    }
-}
-
-impl Clone for ModLoaderVersionMap {
-    fn clone(&self) -> Self {
-        Self {
-            version_getter: self.version_getter,
-            versions_map: Mutex::new(self.versions_map.lock().unwrap().clone()),
-        }
-    }
-}
+// impl Default for ModLoaderVersionMap {
+//     fn default() -> Self {
+//         Self {
+//             version_getter: |_| Vec::new(),
+//             latest_supported_game_version: LazyLock::new(|| String::new()),
+//             versions_map: Mutex::new(HashMap::new()),
+//         }
+//     }
+// }
+//
+// impl Clone for ModLoaderVersionMap {
+//     fn clone(&self) -> Self {
+//         Self {
+//             version_getter: self.version_getter,
+//             latest_supported_game_version: LazyLock::new(|| String::new()), // TODO cloning lazylocks is weird
+//             versions_map: Mutex::new(self.versions_map.lock().unwrap().clone()),
+//         }
+//     }
+// }
