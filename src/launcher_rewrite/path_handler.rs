@@ -85,7 +85,7 @@ pub fn get_assets_root() -> PathBuf {
 }
 
 pub fn get_vanilla_client_json_path(game_version: &str, mod_loader: ModLoader, loader_version: &str) -> PathBuf {
-    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
+    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version, mod_loader);
     let mut cow_loader_version: Cow<str> = loader_version.into();
     let possible_manifest = mod_loader.get_manifest();
     if let Some(manifest) = possible_manifest {
