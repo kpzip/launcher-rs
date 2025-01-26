@@ -8,7 +8,7 @@ struct ShellLinkHeader<'a> {
     file_to_link_to: &'a Path,
 }
 
-impl ShellLinkHeader {
+impl ShellLinkHeader<'_> {
 
     fn write(&self, buf: &mut Vec<u8>) -> io::Result<()> {
         buf.reserve(76);
@@ -20,7 +20,7 @@ impl ShellLinkHeader {
         buf.extend(link_flags.to_ne_bytes());
         let file_attributes: u32 = 0b0000_0000__0000_0000___0000_0000__1000_0000;
         buf.extend(file_attributes.to_ne_bytes());
-        let creation_time: u64 = Utc::now().signed_duration_since(Utc.with_ymd_and_hms(1601, 1, 1, 0, 0, 0)).abs().num_nanoseconds().unwrap() as u64/100;
+        let creation_time: u64 = Utc::now().signed_duration_since(Utc.with_ymd_and_hms(1601, 1, 1, 0, 0, 0).unwrap()).abs().num_nanoseconds().unwrap() as u64/100;
         buf.extend(creation_time.to_ne_bytes());
         let access_time: u64 = creation_time;
         buf.extend(access_time.to_ne_bytes());
