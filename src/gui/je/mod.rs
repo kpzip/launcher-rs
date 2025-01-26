@@ -15,7 +15,7 @@ use crate::gui::WORKER_THREAD_HANDLE;
 use iced::alignment::{Horizontal, Vertical};
 use iced::widget::{button, column, container, row, text, Space, markdown};
 use iced::{Element, Length};
-use crate::gui::je::create_shortcut::ShortcutInfo;
+use crate::gui::je::create_shortcut::{create_shortcut_gui, ShortcutInfo};
 use crate::gui::style::{dark_container_style, generic_button_style};
 use crate::launcher_rewrite::error::LauncherError;
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
@@ -88,6 +88,7 @@ impl JeGuiState {
             JavaEditionTab::Skins => skins_tab_content(),
             JavaEditionTab::Installations => installations_tab_content(self),
             JavaEditionTab::EditProfile(id) => edit_installations_tab_content(&self.profile_edit),
+            JavaEditionTab::CreateShortcut => create_shortcut_gui(),
         }
     }
 
