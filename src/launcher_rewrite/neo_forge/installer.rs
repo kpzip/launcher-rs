@@ -42,7 +42,7 @@ impl Downloadable for NeoForgeJarDownloadable<'_> {
 
 pub fn download(loader_info: &ModLoaderVersionInfo, game_version: &str) -> Result<(), LauncherError> {
     let loader_version = loader_info.version_name();
-    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
+    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version, ModLoader::NeoForge);
 
     // Download installer jar and extract version json and version jar
 
