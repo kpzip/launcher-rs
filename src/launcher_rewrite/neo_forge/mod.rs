@@ -6,7 +6,7 @@ use regex::Regex;
 use reqwest::Url;
 use crate::launcher_rewrite::installer::{ACCEPT_HEADER_NAME, APPLICATION_JSON, DEFAULT_DOWNLOADER_CLIENT};
 use crate::launcher_rewrite::manifest::GAME_VERSION_MANIFEST;
-use crate::launcher_rewrite::mod_loader_version_manifest::ModLoaderVersionInfo;
+use crate::launcher_rewrite::mod_loader_version_manifest::{ModLoaderLatestVersionData, ModLoaderVersionInfo};
 use crate::launcher_rewrite::profiles::ModLoader;
 
 const NEO_FORGE_INDEX_URL: &str = "https://maven.neoforged.net/releases/net/neoforged/neoforge/";
@@ -32,4 +32,9 @@ pub fn get_compatible_versions(game_version: &str) -> Vec<ModLoaderVersionInfo> 
         let url = Url::parse(format!("{}{}/{}{}{}", NEO_FORGE_INDEX_URL, n, NEO_FORGE_INSTALLER_PREFIX, n, NEO_FORGE_INSTALLER_SUFFIX).as_str()).expect("Failed to parse URL!");
         ModLoaderVersionInfo::new(loader_version, is_beta.into(), url, ModLoader::NeoForge)
     }).collect()
+}
+
+pub fn get_latest_supported_game_version() -> ModLoaderLatestVersionData {
+    // TODO web scraping
+    return ModLoaderLatestVersionData::new("".to_owned(), "".to_owned())
 }
