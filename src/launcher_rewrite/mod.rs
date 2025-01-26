@@ -52,7 +52,7 @@ pub fn launch_game(game_version: &str, mod_loader: ModLoader, loader_version: &s
         LauncherError::ProfileError
     })?;
 
-    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version);
+    let game_version = GAME_VERSION_MANIFEST.sanitize_version_name(game_version, mod_loader);
     let loader_version_c = mod_loader.get_manifest().map(|m| m.sanitize_loader_version_name(game_version, loader_version));
     let loader_version = loader_version_c.as_ref().map(|c| c.as_ref());
 
