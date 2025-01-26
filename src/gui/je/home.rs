@@ -40,7 +40,7 @@ impl Display for ProfileSelectorElement {
 
 impl From<&LauncherProfile> for ProfileSelectorElement {
     fn from(value: &LauncherProfile) -> Self {
-        Self { name: value.name().into(), version: GAME_VERSION_MANIFEST.sanitize_version_name(value.version_name()).into(), id: value.id() }
+        Self { name: value.name().into(), version: GAME_VERSION_MANIFEST.sanitize_version_name(value.version_name(), value.mod_loader()).into(), id: value.id() }
     }
 }
 
